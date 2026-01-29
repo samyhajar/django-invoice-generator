@@ -151,8 +151,11 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # WhiteNoise configuration for production
+# WhiteNoise configuration for production
 if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # Use basic WhiteNoise storage to prevent "MissingStaticfilesManifest" errors during startup debugging
+    # STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    pass
 
 # Media files (uploads like company logo)
 MEDIA_URL = 'media/'
