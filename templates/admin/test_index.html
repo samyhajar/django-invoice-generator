@@ -1,0 +1,32 @@
+<!-- CHECKPOINT_FORCE_SINGLE_LINE -->
+{% extends "unfold/layouts/base.html" %}
+{% load i18n unfold %}
+{% block content %}
+<div class="px-4 py-8 md:px-12 md:py-12">
+    {% if dashboard_callback %}
+    <div class="flex flex-col md:flex-row gap-4 mb-8">
+        {% for card in dashboard_callback.cards %}
+        <div
+            class="flex-1 p-6 rounded-lg bg-white border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+            <div class="flex items-center gap-4 mb-4">
+                {% if card.icon %}<span class="material-symbols-outlined text-gray-500 font-variation-settings-fill">{{
+                    card.icon }}</span>{% endif %}
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ card.title }}</h3>
+            </div>
+            <div class="text-2xl font-bold mb-1">{{ card.metric }}</div>
+            {% if card.footer %}<div class="text-xs text-gray-500">{{ card.footer }}</div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {% for chart in dashboard_callback.charts %}
+        <div class="p-6 rounded-lg bg-white border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+            <h3 class="text-lg font-semibold mb-6">{{ chart.title }}</h3>
+            <div class="h-64">{% component "unfold/components/chart.html" with type=chart.type labels=chart.labels
+                datasets=chart.datasets %}{% endcomponent %}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

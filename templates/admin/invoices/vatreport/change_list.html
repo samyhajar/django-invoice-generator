@@ -1,0 +1,31 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+    <div class="px-4 mt-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Financial Summary (Current View)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Net Amount</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{{ summary.net|floatformat:2 }}</p>
+                </div>
+                <div class="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-100 dark:border-primary-800">
+                    <p class="text-sm font-medium text-primary-700 dark:text-primary-400">Total VAT to Pay</p>
+                    <p class="text-2xl font-bold text-primary-700 dark:text-primary-400 mt-1">€{{ summary.vat|floatformat:2 }}</p>
+                </div>
+                <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Gross Total</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{{ summary.gross|floatformat:2 }}</p>
+                </div>
+            </div>
+            {% if summary.count > 0 %}
+            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                Based on {{ summary.count }} paid invoice{{ summary.count|pluralize }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {{ block.super }}
+{% endblock %}
