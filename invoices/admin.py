@@ -208,7 +208,9 @@ class InvoiceAdmin(ModelAdmin):
     @admin.action(description='Mark selected invoices as Sent')
     def make_sent(self, request, queryset):
         queryset.update(status='sent')
-    search_fields = ['invoice_number', 'client__name']
+    
+    search_fields = ['invoice_number', 'project__client__name']
+    autocomplete_fields = ['project']
     date_hierarchy = 'date'
     inlines = [ServiceItemInline, ExpenseItemInline, MileageItemInline]
     readonly_fields = ['invoice_number', 'view_pdf_link']
