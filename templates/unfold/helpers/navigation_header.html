@@ -7,7 +7,7 @@
         x-bind:class="{'bg-base-100 dark:bg-white/[.06]': openDropdown, 'bg-transparent': !openDropdown}" {% endif %}>
         <a href="{% url 'admin:index' %}" class="flex items-center gap-3 overflow-hidden">
             {% if tenant_company_profile.logo %}
-            <img src="{{ tenant_company_profile.logo.url }}" class="h-7 w-auto max-w-[120px] object-contain"
+            <img src="{{ tenant_company_profile.logo.url }}" class="h-8 w-auto max-w-[140px] object-contain"
                 alt="{{ tenant_company_profile.company_name|default:site_header }}">
             {% else %}
             <div class="flex items-center gap-3">

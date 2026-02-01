@@ -465,6 +465,9 @@ class InvoiceAdmin(RoleIsolatedAdmin):
 class EstimatedTaxAdmin(RoleIsolatedAdmin):
     change_list_template = "invoices/tax_detail.html"
 
+    def has_module_permission(self, request):
+        return False
+
     def changelist_view(self, request, extra_context=None):
         from django.utils import timezone
         from .utils import calculate_progressive_tax
@@ -506,15 +509,6 @@ class EstimatedTaxAdmin(RoleIsolatedAdmin):
         return False
 
 
-@admin.register(InvoiceItem)
-class InvoiceItemAdmin(RoleIsolatedAdmin):
-    list_display = ['description', 'invoice', 'quantity', 'unit_price', 'get_total']
-    list_filter = ['invoice__status']
-    search_fields = ['description', 'invoice__invoice_number']
-    
-    def get_total(self, obj):
-        return f"€{obj.total():.2f}"
-    get_total.short_description = 'Total'
 
 
 @admin.register(from_models.DocumentArchive)
@@ -612,8 +606,14 @@ class TaxYearAdmin(RoleIsolatedAdmin):
     list_display = ['year', 'active', 'created_at']
     list_filter = ['active']
 
+    def has_module_permission(self, request):
+        return False
+
 
 @admin.register(TaxBracket)
 class TaxBracketAdmin(RoleIsolatedAdmin):
     list_display = ['tax_year', 'rate', 'lower_limit', 'upper_limit']
     list_filter = ['tax_year']
+
+    def has_module_permission(self, request):
+        return False
