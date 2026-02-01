@@ -72,29 +72,31 @@ def get_dashboard_stats(request, context):
             'gross_total': inv.get_gross_total(),
         })
 
+    from django.utils.formats import number_format
+
     context.update({
         "cards": [
             {
                 "title": "Total Revenue (Paid)",
-                "metric": f"€{gross_total_paid:,.2f}",
+                "metric": f"{number_format(gross_total_paid, decimal_pos=2)} €",
                 "footer": f"From {all_paid.count()} paid invoices",
                 "icon": "payments",
             },
             {
                 "title": "Pending Payments",
-                "metric": f"€{pending_revenue:,.2f}",
+                "metric": f"{number_format(pending_revenue, decimal_pos=2)} €",
                 "footer": f"{pending_invoices.count()} invoices awaiting payment",
                 "icon": "pending_actions",
             },
             {
                 "title": "This Month",
-                "metric": f"€{this_month_revenue:,.2f}",
+                "metric": f"{number_format(this_month_revenue, decimal_pos=2)} €",
                 "footer": f"{this_month_invoices.count()} invoices paid",
                 "icon": "calendar_month",
             },
             {
                 "title": "Average Invoice",
-                "metric": f"€{avg_invoice:,.2f}",
+                "metric": f"{number_format(avg_invoice, decimal_pos=2)} €",
                 "footer": "Per paid invoice",
                 "icon": "trending_up",
             },
@@ -106,7 +108,7 @@ def get_dashboard_stats(request, context):
             },
             {
                 "title": "VAT Summary",
-                "metric": f"€{vat_total_paid:,.2f}",
+                "metric": f"{number_format(vat_total_paid, decimal_pos=2)} €",
                 "footer": f"Total VAT collected (Paid)",
                 "icon": "assessment",
                 "link": "/admin/invoices/vatreport/",

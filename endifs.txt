@@ -1,0 +1,38 @@
+8:    <title>{% if invoice.language == 'de' %}Rechnung{% else %}Invoice{% endif %} {{ invoice.invoice_number }}</title>
+232:        {% endif %}
+237:            {% endif %}
+240:            {% endif %}
+249:                <div class="invoice-title">{% if invoice.language == 'de' %}RECHNUNG{% else %}INVOICE{% endif %}</div>
+257:            <div class="meta-label">{% if invoice.language == 'de' %}Rechnungsempfänger:{% else %}Billed To:{% endif %}
+261:                {% if client.name_extension %}{{ client.name_extension }}<br>{% endif %}
+263:                {% if client.email %}{{ client.email }}<br>{% endif %}
+264:                {% if client.phone %}{{ client.phone }}<br>{% endif %}
+265:                {% if client.uid %}UID: {{ client.uid }}{% endif %}
+269:            <div class="meta-label">{% if invoice.language == 'de' %}Datum:{% else %}Date:{% endif %}</div>
+272:                }}{% endif %}
+282:                <th style="width: 25%;">{% if invoice.language == 'de' %}LEISTUNG{% else %}SERVICE{% endif %}</th>
+284:                <th class="right" style="width: 10%;">{% if invoice.language == 'de' %}MENGE{% else %}QTY{% endif %}
+304:                    LEISTUNG{% else %}SERVICE TOTAL{% endif %}</td>
+315:                    %}SERVICE GROSS TOTAL{% endif %}</td>
+321:    {% endif %}
+328:                <th style="width: 25%;">{% if invoice.language == 'de' %}SPESEN{% else %}EXPENSES{% endif %}</th>
+329:                <th style="width: 35%;">{% if invoice.language == 'de' %}BESCHREIBUNG{% else %}DESCRIPTION{% endif %}
+331:                <th class="right" style="width: 10%;">{% if invoice.language == 'de' %}MENGE{% else %}QTY{% endif %}
+351:                    SPESEN{% else %}EXPENSE TOTAL{% endif %}</td>
+357:    {% endif %}
+364:                <th style="width: 25%;">{% if invoice.language == 'de' %}KILOMETERGELD{% else %}MILEAGE{% endif %}</th>
+378:                        }}){% else %}({{ item.num_people }} Person{{ item.num_people|pluralize }}){% endif %}
+389:                    KILOMETERGELD{% else %}MILEAGE TOTAL{% endif %}</td>
+395:    {% endif %}
+413:    {% endif %}
+417:            <div class="payment-label">{% if invoice.language == 'de' %}ZAHLBAR BIS:{% else %}DUE DATE:{% endif %}</div>
+420:                invoice.due_date|date:"d F, Y" }}{% endif %}
+428:        {% endif %}
+431:            <div class="payment-title">{% if invoice.language == 'de' %}Zahlungsinfo:{% else %}Pay To:{% endif %}</div>
+434:                    {% if invoice.language == 'de' %}Kontoinhaber{% else %}Account Name{% endif %}
+442:            {% endif %}
+449:        {% if company.display_address %}{{ company.address|linebreaksbr }}{% endif %}
+450:        {% if company.display_address and company.display_phone %} - {% endif %}
+451:        {% if company.display_phone %}{{ company.phone }}{% endif %}
+453:        {% endif %}
+454:        {% if company.display_email %}{{ company.email }}{% endif %}

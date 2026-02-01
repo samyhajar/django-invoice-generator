@@ -1,0 +1,40 @@
+8:    <title>{% if invoice.language == 'de' %}Rechnung{% else %}Invoice{% endif %} {{ invoice.invoice_number }}</title>
+230:        {% if company.logo and company.display_logo %}
+235:            {% if company.display_company_name %}
+238:            {% if company.uid %}
+249:                <div class="invoice-title">{% if invoice.language == 'de' %}RECHNUNG{% else %}INVOICE{% endif %}</div>
+257:            <div class="meta-label">{% if invoice.language == 'de' %}Rechnungsempfänger:{% else %}Billed To:{% endif %}
+261:                {% if client.name_extension %}{{ client.name_extension }}<br>{% endif %}
+263:                {% if client.email %}{{ client.email }}<br>{% endif %}
+264:                {% if client.phone %}{{ client.phone }}<br>{% endif %}
+265:                {% if client.uid %}UID: {{ client.uid }}{% endif %}
+269:            <div class="meta-label">{% if invoice.language == 'de' %}Datum:{% else %}Date:{% endif %}</div>
+271:                {% if invoice.language == 'de' %}{{ invoice.date|date:"d.m.Y" }}{% else %}{{ invoice.date|date:"d F, Y"
+278:    {% if service_items %}
+282:                <th style="width: 25%;">{% if invoice.language == 'de' %}LEISTUNG{% else %}SERVICE{% endif %}</th>
+284:                <th class="right" style="width: 10%;">{% if invoice.language == 'de' %}MENGE{% else %}QTY{% endif %}
+286:                <th class="right" style="width: 15%;">{% if invoice.language == 'de' %}EINZELPREIS{% else %}UNIT PRICE{%
+303:                <td colspan="2" style="font-weight: 600; background: #f9f9f9;">{% if invoice.language == 'de' %}SUMME
+314:                <td colspan="2" style="font-weight: 600;">{% if invoice.language == 'de' %}GESAMT LEISTUNG{% else
+324:    {% if expense_items %}
+328:                <th style="width: 25%;">{% if invoice.language == 'de' %}SPESEN{% else %}EXPENSES{% endif %}</th>
+329:                <th style="width: 35%;">{% if invoice.language == 'de' %}BESCHREIBUNG{% else %}DESCRIPTION{% endif %}
+331:                <th class="right" style="width: 10%;">{% if invoice.language == 'de' %}MENGE{% else %}QTY{% endif %}
+333:                <th class="right" style="width: 15%;">{% if invoice.language == 'de' %}EINZELPREIS{% else %}UNIT PRICE{%
+350:                <td colspan="2" style="font-weight: 600; background: #f9f9f9;">{% if invoice.language == 'de' %}SUMME
+360:    {% if mileage_items %}
+364:                <th style="width: 25%;">{% if invoice.language == 'de' %}KILOMETERGELD{% else %}MILEAGE{% endif %}</th>
+377:                        {% if invoice.language == 'de' %}({{ item.num_people }} Person{{ item.num_people|pluralize:"en"
+388:                <td colspan="2" style="font-weight: 600; background: #f9f9f9;">{% if invoice.language == 'de' %}SUMME
+409:    {% if invoice.notes %}
+417:            <div class="payment-label">{% if invoice.language == 'de' %}ZAHLBAR BIS:{% else %}DUE DATE:{% endif %}</div>
+419:                {% if invoice.language == 'de' %}{{ invoice.due_date|date:"d.m.Y" }}{% else %}{{
+423:        {% if company.iban %}
+431:            <div class="payment-title">{% if invoice.language == 'de' %}Zahlungsinfo:{% else %}Pay To:{% endif %}</div>
+434:                    {% if invoice.language == 'de' %}Kontoinhaber{% else %}Account Name{% endif %}
+438:            {% if payment_info %}
+449:        {% if company.display_address %}{{ company.address|linebreaksbr }}{% endif %}
+450:        {% if company.display_address and company.display_phone %} - {% endif %}
+451:        {% if company.display_phone %}{{ company.phone }}{% endif %}
+452:        {% if company.display_address and company.display_email or company.display_phone and company.display_email %} -
+454:        {% if company.display_email %}{{ company.email }}{% endif %}

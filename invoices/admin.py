@@ -178,15 +178,18 @@ class VATReportAdmin(RoleIsolatedAdmin):
 
     @admin.display(description='Net Total (€)')
     def get_net_total_display(self, obj):
-        return f"€{obj.get_net_total():.2f}"
+        from django.utils.formats import number_format
+        return f"{number_format(obj.get_net_total(), decimal_pos=2)} €"
 
     @admin.display(description='VAT (€)')
     def get_vat_display(self, obj):
-        return f"€{obj.calculate_vat():.2f}"
+        from django.utils.formats import number_format
+        return f"{number_format(obj.calculate_vat(), decimal_pos=2)} €"
 
     @admin.display(description='Gross Total (€)')
     def get_gross_total_display(self, obj):
-        return f"€{obj.get_gross_total():.2f}"
+        from django.utils.formats import number_format
+        return f"{number_format(obj.get_gross_total(), decimal_pos=2)} €"
 
     @admin.display(description='Status')
     def status_badge(self, obj):
@@ -302,9 +305,10 @@ class InvoiceAdmin(RoleIsolatedAdmin):
     def client_display(self, obj):
         return obj.project.client.name if obj.project else "-"
 
-    @admin.display(description='Amount')
+    @admin.display(description='Amount (Brutto)')
     def gross_total_display(self, obj):
-        return f"€{obj.get_gross_total():.2f}"
+        from django.utils.formats import number_format
+        return f"{number_format(obj.get_gross_total(), decimal_pos=2)} €"
 
     @admin.action(description='Mark selected invoices as Paid')
     def make_paid(self, request, queryset):
@@ -368,7 +372,8 @@ class InvoiceAdmin(RoleIsolatedAdmin):
         )
 
     def get_gross_total(self, obj):
-        return f"€{obj.get_gross_total():.2f}"
+        from django.utils.formats import number_format
+        return f"{number_format(obj.get_gross_total(), decimal_pos=2)} €"
     get_gross_total.short_description = 'Gross Total'
     
     def view_pdf_link(self, obj):

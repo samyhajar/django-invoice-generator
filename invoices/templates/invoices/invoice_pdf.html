@@ -292,8 +292,8 @@
                 <td>{{ item.product.name|default:item.description }}</td>
                 <td>{{ item.description }}</td>
                 <td class="right">{{ item.quantity|floatformat:"-2" }}</td>
-                <td class="right">€{{ item.get_unit_rate_display|currency_de }}</td>
-                <td class="right">€{{ item.total|currency_de }}</td>
+                <td class="right">{{ item.get_unit_rate_display|currency_de }} €</td>
+                <td class="right">{{ item.total|currency_de }} €</td>
             </tr>
             {% endfor %}
             {# Service Subtotal #}
@@ -301,17 +301,17 @@
                 <td colspan="2" style="font-weight: 600; background: #f9f9f9;">{% if invoice.language == 'de' %}SUMME
                     LEISTUNG{% else %}SERVICE TOTAL{% endif %}</td>
                 <td colspan="2" style="border: none;"></td>
-                <td class="right" style="font-weight: 600; background: #f9f9f9;">€{{ service_net|currency_de }}</td>
+                <td class="right" style="font-weight: 600; background: #f9f9f9;">{{ service_net|currency_de }} €</td>
             </tr>
             <tr>
                 <td colspan="2" style="color: #666;">{{ invoice.vat_rate }}% {{ vat_label }}</td>
                 <td colspan="2" style="border: none;"></td>
-                <td class="right" style="color: #666;">€{{ service_vat|currency_de }}</td>
+                <td class="right" style="color: #666;">{{ service_vat|currency_de }} €</td>
             </tr>
             <tr>
                 <td colspan="2" style="font-weight: 600;">{% if invoice.language == 'de' %}GESAMT LEISTUNG{% else %}SERVICE GROSS TOTAL{% endif %}</td>
                 <td colspan="2" style="border: none;"></td>
-                <td class="right" style="font-weight: 600;">€{{ service_gross|currency_de }}</td>
+                <td class="right" style="font-weight: 600;">{{ service_gross|currency_de }} €</td>
             </tr>
         </tbody>
     </table>
@@ -337,8 +337,8 @@
                 <td>{{ item.product.name|default:"Spesen" }}</td>
                 <td>{{ item.description }}</td>
                 <td class="right">{{ item.quantity|floatformat:"-2" }}</td>
-                <td class="right">€{{ item.unit_price|currency_de }}</td>
-                <td class="right">€{{ item.total|currency_de }}</td>
+                <td class="right">{{ item.unit_price|currency_de }} €</td>
+                <td class="right">{{ item.total|currency_de }} €</td>
             </tr>
             {% endfor %}
             {# Expense Subtotal #}
@@ -346,7 +346,7 @@
                 <td colspan="2" style="font-weight: 600; background: #f9f9f9;">{% if invoice.language == 'de' %}SUMME
                     SPESEN{% else %}EXPENSE TOTAL{% endif %}</td>
                 <td colspan="2" style="border: none;"></td>
-                <td class="right" style="font-weight: 600; background: #f9f9f9;">€{{ expense_total|currency_de }}</td>
+                <td class="right" style="font-weight: 600; background: #f9f9f9;">{{ expense_total|currency_de }} €</td>
             </tr>
         </tbody>
     </table>
@@ -374,8 +374,8 @@
                     </small>
                 </td>
                 <td class="right">{{ item.quantity|floatformat:"-2" }}</td>
-                <td class="right">€{{ item.get_unit_rate_display|currency_de }}</td>
-                <td class="right">€{{ item.total|currency_de }}</td>
+                <td class="right">{{ item.get_unit_rate_display|currency_de }} €</td>
+                <td class="right">{{ item.total|currency_de }} €</td>
             </tr>
             {% endfor %}
             {# Mileage Subtotal #}
@@ -383,7 +383,7 @@
                 <td colspan="2" style="font-weight: 600; background: #f9f9f9;">{% if invoice.language == 'de' %}SUMME
                     KILOMETERGELD{% else %}MILEAGE TOTAL{% endif %}</td>
                 <td colspan="2" style="border: none;"></td>
-                <td class="right" style="font-weight: 600; background: #f9f9f9;">€{{ mileage_total|currency_de }}</td>
+                <td class="right" style="font-weight: 600; background: #f9f9f9;">{{ mileage_total|currency_de }} €</td>
             </tr>
         </tbody>
     </table>
@@ -394,7 +394,7 @@
         <table style="width: 350px; margin-left: auto; border: none; margin-top: 0;">
             <tr style="border: 2px solid #000;">
                 <td class="right" style="font-size: 14pt; font-weight: 600; padding: 10px; width: 50%;">GESAMT</td>
-                <td class="right" style="font-size: 14pt; font-weight: 600; padding: 10px; width: 50%;">€{{ gross_total|currency_de }}</td>
+                <td class="right" style="font-size: 14pt; font-weight: 600; padding: 10px; width: 50%;">{{ gross_total|currency_de }} €</td>
             </tr>
         </table>
     </div>

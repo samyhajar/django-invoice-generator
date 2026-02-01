@@ -1,5 +1,5 @@
 {% extends "admin/change_list.html" %}
-{% load i18n admin_urls %}
+{% load i18n admin_urls l10n %}
 
 {% block content %}
 <div class="mt-6">
@@ -9,15 +9,16 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Net Amount</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{{ net_revenue|floatformat:2 }}</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ net_revenue|floatformat:2 }} €</p>
             </div>
             <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
                 <p class="text-sm font-medium text-green-700 dark:text-green-400">Estimated Tax</p>
-                <p class="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">€{{ total_tax|floatformat:2 }}</p>
+                <p class="text-2xl font-bold text-green-700 dark:text-green-400 mt-1">{{ total_tax|floatformat:2 }} €
+                </p>
             </div>
             <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Net After Tax</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{{ net_after_tax|floatformat:2 }}</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ net_after_tax|floatformat:2 }} €</p>
             </div>
         </div>
         <div
@@ -56,10 +57,10 @@
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                         <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">{{ b.bracket.description }}</td>
                         <td class="px-6 py-4 text-center whitespace-nowrap">{{ b.rate|floatformat:0 }}%</td>
-                        <td class="px-6 py-4 text-right whitespace-nowrap">€{{ b.taxable_amount|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-right whitespace-nowrap">{{ b.taxable_amount|floatformat:2 }} €</td>
                         <td
                             class="px-6 py-4 text-right font-bold text-green-700 dark:text-green-400 bg-green-50/50 dark:bg-green-900/10 whitespace-nowrap">
-                            €{{ b.tax_amount|floatformat:2 }}
+                            {{ b.tax_amount|floatformat:2 }} €
                         </td>
                         <td class="px-6 py-4">
                             <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
