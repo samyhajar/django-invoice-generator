@@ -1,6 +1,7 @@
 from django.utils import timezone
 from decimal import Decimal
 from .models import Invoice, Client
+from .utils import calculate_progressive_tax
 
 def get_dashboard_stats(request, context):
     """
@@ -8,28 +9,50 @@ def get_dashboard_stats(request, context):
     Returns comprehensive stats cards for the admin dashboard.
     """
     now = timezone.now()
+    current_year = now.year
     
-    # Calculate totals from paid invoices
-    all_paid = Invoice.objects.filter(status='paid')
+    # Role-based filtering within the tenant
+    user_invoices = Invoice.objects.all()
+    user_clients = Client.objects.all()
+    
+    if not request.user.is_superuser:
+        try:
+            profile = request.user.profile
+            if profile.role == 'user':
+                user_invoices = user_invoices.filter(creator=request.user)
+                user_clients = user_clients.filter(creator=request.user)
+        except Exception:
+            pass
+
+    # Calculate totals from paid invoices (All time)
+    all_paid = user_invoices.filter(status='paid')
     gross_total_paid = sum(inv.get_gross_total() for inv in all_paid)
     vat_total_paid = sum(inv.calculate_vat() for inv in all_paid)
     
     # Calculate pending invoices
-    pending_invoices = Invoice.objects.filter(status='sent')
+    pending_invoices = user_invoices.filter(status='sent')
     pending_revenue = sum(inv.get_gross_total() for inv in pending_invoices)
     
+    # Tax Calculation for Current Year
+    current_year_paid = all_paid.filter(date__year=current_year)
+    current_year_net_revenue = sum(inv.get_net_total() for inv in current_year_paid)
+    
+    tax_data = calculate_progressive_tax(current_year_net_revenue, current_year)
+    estimated_tax = tax_data.get('total_tax', Decimal('0.00'))
+    effective_rate = tax_data.get('effective_rate', Decimal('0.00'))
+    
     # Draft invoices
-    draft_invoices = Invoice.objects.filter(status='draft')
+    draft_invoices_count = user_invoices.filter(status='draft').count()
     
     # Total invoices and clients
-    total_invoices = Invoice.objects.count()
-    total_clients = Client.objects.count()
+    total_invoices = user_invoices.count()
+    total_clients = user_clients.count()
     
     # Calculate average invoice value
     avg_invoice = gross_total_paid / all_paid.count() if all_paid.count() > 0 else 0
     
     # This month's revenue
-    this_month_invoices = Invoice.objects.filter(
+    this_month_invoices = user_invoices.filter(
         status='paid',
         date__year=now.year,
         date__month=now.month
@@ -37,7 +60,7 @@ def get_dashboard_stats(request, context):
     this_month_revenue = sum(inv.get_gross_total() for inv in this_month_invoices)
     
     # Get recent invoices
-    recent_invoices_qs = Invoice.objects.select_related('project__client').order_by('-date')[:10]
+    recent_invoices_qs = user_invoices.select_related('project__client').order_by('-date')[:10]
     recent_invoices = []
     for inv in recent_invoices_qs:
         recent_invoices.append({
@@ -82,10 +105,11 @@ def get_dashboard_stats(request, context):
                 "icon": "groups",
             },
             {
-                "title": "Draft Invoices",
-                "metric": str(draft_invoices.count()),
-                "footer": "Ready to send",
-                "icon": "draft",
+                "title": f"Est. Income Tax ({current_year})",
+                "metric": f"€{estimated_tax:,.2f}",
+                "footer": f"Eff. Rate: {effective_rate:.1f}% (Net: €{current_year_net_revenue:,.0f})",
+                "icon": "account_balance",
+                "link": "/admin/invoices/estimatedtax/",
             },
         ],
         "recent_invoices": recent_invoices,

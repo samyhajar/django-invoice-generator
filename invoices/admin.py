@@ -1,11 +1,46 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
-from .models import Client, Project, Invoice, InvoiceItem, CompanyProfile, Product, VATReport, DocumentArchive
+from .models import Tenant, Client, Project, Invoice, InvoiceItem, CompanyProfile, Product, VATReport, DocumentArchive, TaxYear, TaxBracket, EstimatedTax, UserProfile
 from . import models as from_models
+
+class RoleIsolatedAdmin(ModelAdmin):
+    """Base class to isolate data by role within a tenant"""
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        
+        try:
+            profile = request.user.profile
+            if profile.role == 'admin':
+                return qs
+            # For 'user' role, filter by creator
+            if hasattr(self.model, 'creator'):
+                return qs.filter(creator=request.user)
+        except UserProfile.DoesNotExist:
+            pass
+        return qs
+
+    def save_model(self, request, obj, form, change):
+        if not change and hasattr(obj, 'creator'):
+            obj.creator = request.user
+        super().save_model(request, obj, form, change)
+
+@admin.register(UserProfile)
+class UserProfileAdmin(ModelAdmin):
+    list_display = ['user', 'tenant', 'role']
+    list_filter = ['role', 'tenant']
+    search_fields = ['user__username', 'tenant__name']
+
+
+@admin.register(Tenant)
+class TenantAdmin(ModelAdmin):
+    list_display = ['name', 'owner', 'created_at']
+    search_fields = ['name', 'owner__username']
 
 
 @admin.register(CompanyProfile)
-class CompanyProfileAdmin(ModelAdmin):
+class CompanyProfileAdmin(RoleIsolatedAdmin):
     """Admin for singleton CompanyProfile"""
     
     def has_add_permission(self, request):
@@ -43,7 +78,7 @@ class CompanyProfileAdmin(ModelAdmin):
 
 
 @admin.register(VATReport)
-class VATReportAdmin(ModelAdmin):
+class VATReportAdmin(RoleIsolatedAdmin):
     list_display = ['invoice_number', 'get_client', 'date', 'get_net_total_display', 'get_vat_display', 'get_gross_total_display', 'status']
     list_filter = ['date', 'status', 'project__client']
     readonly_fields = ['invoice_number', 'get_client', 'date', 'due_date', 'status', 'language', 'vat_rate']
@@ -78,6 +113,46 @@ class VATReportAdmin(ModelAdmin):
             }
             
             response.context_data['summary'] = summary
+            
+            # Helper to determine quarter
+            def get_quarter(date_obj):
+                return (date_obj.month - 1) // 3 + 1
+
+            # Calculate quarterly breakdown
+            quarterly_data = {}
+            
+            for inv in queryset:
+                year = inv.date.year
+                quarter = get_quarter(inv.date)
+                key = (year, quarter)
+                
+                if key not in quarterly_data:
+                    quarterly_data[key] = {
+                        'net': 0,
+                        'vat': 0,
+                        'gross': 0,
+                        'count': 0
+                    }
+                
+                quarterly_data[key]['net'] += inv.get_net_total()
+                quarterly_data[key]['vat'] += inv.calculate_vat()
+                quarterly_data[key]['gross'] += inv.get_gross_total()
+                quarterly_data[key]['count'] += 1
+            
+            # Sort by Year DESC, Quarter DESC
+            sorted_quarters = sorted(quarterly_data.items(), key=lambda x: x[0], reverse=True)
+            
+            quarterly_summary = []
+            for (year, quarter), data in sorted_quarters:
+                quarterly_summary.append({
+                    'label': f"Q{quarter} {year}",
+                    'net': data['net'],
+                    'vat': data['vat'],
+                    'gross': data['gross'],
+                    'count': data['count']
+                })
+                
+            response.context_data['quarterly_summary'] = quarterly_summary
         except (AttributeError, KeyError):
             pass
             
@@ -103,20 +178,20 @@ class VATReportAdmin(ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(ModelAdmin):
+class ProductAdmin(RoleIsolatedAdmin):
     list_display = ['name', 'default_unit_price', 'created_at']
     search_fields = ['name']
 
 
 @admin.register(Client)
-class ClientAdmin(ModelAdmin):
+class ClientAdmin(RoleIsolatedAdmin):
     list_display = ['name', 'initials', 'email', 'phone', 'created_at']
     search_fields = ['name', 'email', 'initials']
     list_filter = ['created_at']
 
 
 @admin.register(Project)
-class ProjectAdmin(ModelAdmin):
+class ProjectAdmin(RoleIsolatedAdmin):
     list_display = ['name', 'abbreviation', 'client', 'created_at']
     search_fields = ['name', 'abbreviation', 'client__name']
     list_filter = ['client', 'created_at']
@@ -178,7 +253,7 @@ class MileageItemInline(TabularInline):
 
 
 @admin.register(Invoice)
-class InvoiceAdmin(ModelAdmin):
+class InvoiceAdmin(RoleIsolatedAdmin):
     list_display = ['global_id_display', 'client_initials_display', 'client_seq_display', 'project_id_display', 'status', 'view_pdf_link', 'mark_paid_button']
     list_filter = ['status', 'language', 'date', 'project__client']
     actions = ['make_paid', 'make_sent']
@@ -214,6 +289,11 @@ class InvoiceAdmin(ModelAdmin):
     date_hierarchy = 'date'
     inlines = [ServiceItemInline, ExpenseItemInline, MileageItemInline]
     readonly_fields = ['invoice_number', 'view_pdf_link']
+    exclude = ['vat_label']
+
+    class Media:
+        js = ('js/admin_autofill.js',)
+
     
     def get_gross_total(self, obj):
         return f"€{obj.get_gross_total():.2f}"
@@ -271,8 +351,56 @@ class InvoiceAdmin(ModelAdmin):
     mark_paid_button.allow_tags = True
 
 
+    mark_paid_button.allow_tags = True
+
+
+@admin.register(from_models.EstimatedTax)
+class EstimatedTaxAdmin(RoleIsolatedAdmin):
+    change_list_template = "invoices/tax_detail.html"
+
+    def changelist_view(self, request, extra_context=None):
+        from django.utils import timezone
+        from .utils import calculate_progressive_tax
+        from .models import Invoice
+        
+        now = timezone.now()
+        current_year = now.year
+        
+        # Calculate totals from paid invoices (Current Year)
+        all_paid = Invoice.objects.filter(status='paid', date__year=current_year)
+        gross_revenue = sum(inv.get_gross_total() for inv in all_paid)
+        net_revenue = sum(inv.get_net_total() for inv in all_paid)
+        
+        tax_data = calculate_progressive_tax(net_revenue, current_year)
+        
+        extra_context = extra_context or {}
+        extra_context.update({
+            'year': current_year,
+            'gross_revenue': gross_revenue,
+            'net_revenue': net_revenue,
+            'tax_data': tax_data,
+            'brackets': tax_data.get('brackets', []),
+            'total_tax': tax_data.get('total_tax', 0),
+            'net_after_tax': net_revenue - tax_data.get('total_tax', 0),
+            'effective_rate': tax_data.get('effective_rate', 0),
+            # Unfold breadcrumbs support
+            'title': f'Estimated Tax {current_year}',
+        })
+        
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def has_add_permission(self, request):
+        return False
+        
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(InvoiceItem)
-class InvoiceItemAdmin(ModelAdmin):
+class InvoiceItemAdmin(RoleIsolatedAdmin):
     list_display = ['description', 'invoice', 'quantity', 'unit_price', 'get_total']
     list_filter = ['invoice__status']
     search_fields = ['description', 'invoice__invoice_number']
@@ -283,7 +411,7 @@ class InvoiceItemAdmin(ModelAdmin):
 
 
 @admin.register(from_models.DocumentArchive)
-class DocumentArchiveAdmin(ModelAdmin):
+class DocumentArchiveAdmin(RoleIsolatedAdmin):
     change_list_template = "admin/invoices/documentarchive/change_list.html"
 
     def changelist_view(self, request, extra_context=None):
@@ -371,3 +499,14 @@ class DocumentArchiveAdmin(ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+@admin.register(TaxYear)
+class TaxYearAdmin(RoleIsolatedAdmin):
+    list_display = ['year', 'active', 'created_at']
+    list_filter = ['active']
+
+
+@admin.register(TaxBracket)
+class TaxBracketAdmin(RoleIsolatedAdmin):
+    list_display = ['tax_year', 'rate', 'lower_limit', 'upper_limit']
+    list_filter = ['tax_year']

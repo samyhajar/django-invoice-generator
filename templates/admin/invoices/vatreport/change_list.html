@@ -2,30 +2,69 @@
 {% load i18n admin_urls %}
 
 {% block content %}
-    <div class="px-4 mt-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Financial Summary (Current View)</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Net Amount</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{{ summary.net|floatformat:2 }}</p>
-                </div>
-                <div class="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-100 dark:border-primary-800">
-                    <p class="text-sm font-medium text-primary-700 dark:text-primary-400">Total VAT to Pay</p>
-                    <p class="text-2xl font-bold text-primary-700 dark:text-primary-400 mt-1">€{{ summary.vat|floatformat:2 }}</p>
-                </div>
-                <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Gross Total</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{{ summary.gross|floatformat:2 }}</p>
-                </div>
+<div class="px-4 mt-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Financial Summary (Current View)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Net Amount</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{{ summary.net|floatformat:2 }}</p>
             </div>
-            {% if summary.count > 0 %}
-            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                Based on {{ summary.count }} paid invoice{{ summary.count|pluralize }}
+            <div
+                class="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-100 dark:border-primary-800">
+                <p class="text-sm font-medium text-primary-700 dark:text-primary-400">Total VAT to Pay</p>
+                <p class="text-2xl font-bold text-primary-700 dark:text-primary-400 mt-1">€{{ summary.vat|floatformat:2
+                    }}</p>
             </div>
-            {% endif %}
+            <div class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Gross Total</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">€{{ summary.gross|floatformat:2 }}</p>
+            </div>
+        </div>
+        {% if summary.count > 0 %}
+        <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+            Based on {{ summary.count }} paid invoice{{ summary.count|pluralize }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if quarterly_summary %}
+<div class="px-4 mb-6">
+    <div
+        class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Quarterly Breakdown</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+                <thead class="bg-gray-50 dark:bg-gray-900 text-xs uppercase font-medium">
+                    <tr>
+                        <th class="px-6 py-3">Quarter</th>
+                        <th class="px-6 py-3">Net Amount</th>
+                        <th class="px-6 py-3 text-primary-600 dark:text-primary-400 font-bold">VAT to Pay</th>
+                        <th class="px-6 py-3">Gross Total</th>
+                        <th class="px-6 py-3 text-right">Invoices</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for quarter in quarterly_summary %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ quarter.label }}</td>
+                        <td class="px-6 py-4">€{{ quarter.net|floatformat:2 }}</td>
+                        <td
+                            class="px-6 py-4 font-bold text-primary-700 dark:text-primary-400 bg-primary-50/50 dark:bg-primary-900/10">
+                            €{{ quarter.vat|floatformat:2 }}</td>
+                        <td class="px-6 py-4">€{{ quarter.gross|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-right">{{ quarter.count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-    
-    {{ block.super }}
+</div>
+{% endif %}
+
+{{ block.super }}
 {% endblock %}

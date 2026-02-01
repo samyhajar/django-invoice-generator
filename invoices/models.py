@@ -1,10 +1,72 @@
 from django.db import models
 from decimal import Decimal
 from django.core.exceptions import ValidationError
+from django.conf import settings
+from django_multitenant.models import TenantModel
+from django_multitenant.fields import TenantForeignKey
 
 
-class CompanyProfile(models.Model):
-    """Singleton model for company information (only one instance allowed)"""
+class Tenant(models.Model):
+    """Tenant model to separate data for different users/companies"""
+    name = models.CharField(max_length=255)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='tenants')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
+
+    def __str__(self):
+
+
+        return self.name
+
+    class Meta:
+        verbose_name = "Tenant"
+        verbose_name_plural = "Tenants"
+
+
+class UserProfile(models.Model):
+    """User profile to store roles and tenant association"""
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('user', 'User'),
+        ('customer', 'Customer'),
+    ]
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
+
+    def __str__(self):
+
+
+        return f"{self.user.username} ({self.role})"
+
+
+class CompanyProfile(TenantModel):
+    """Singleton model for company information (one per tenant)"""
+    class TenantMeta:
+        tenant_field_name = 'tenant_id'
+
+    tenant = TenantForeignKey(Tenant, on_delete=models.CASCADE, related_name='company_profiles')
     company_name = models.CharField(max_length=255, default="Your Company Name")
     display_company_name = models.BooleanField(default=True, verbose_name="Show Company Name on PDF")
     
@@ -61,24 +123,41 @@ class CompanyProfile(models.Model):
         verbose_name = "Company Profile"
         verbose_name_plural = "Company Profile"
 
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
+
     def __str__(self):
-        return self.company_name
+
+
+        return f"Profile for {self.tenant.name}"
 
     def save(self, *args, **kwargs):
-        """Ensure only one instance exists (singleton pattern)"""
-        if not self.pk and CompanyProfile.objects.exists():
-            raise ValidationError('Only one Company Profile can exist.')
+        """Ensure only one instance exists per tenant"""
+        if not self.pk and CompanyProfile.objects.filter(tenant=self.tenant).exists():
+            raise ValidationError('Only one Company Profile can exist per tenant.')
         return super().save(*args, **kwargs)
 
     @classmethod
-    def get_instance(cls):
-        """Get or create the singleton instance"""
-        obj, created = cls.objects.get_or_create(pk=1)
+    def get_instance(cls, tenant):
+        """Get or create the instance for the specific tenant"""
+        obj, created = cls.objects.get_or_create(tenant=tenant)
         return obj
 
 
-class Client(models.Model):
+class Client(TenantModel):
     """Client model for invoice recipients"""
+    class TenantMeta:
+        tenant_field_name = 'tenant_id'
+
+    tenant = TenantForeignKey(Tenant, on_delete=models.CASCADE, related_name='clients')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_clients')
     name = models.CharField(max_length=255)
     initials = models.CharField(max_length=2, default="??", help_text="e.g. PK for Philipp Krebs")
     email = models.EmailField(blank=True, null=True)
@@ -90,12 +169,28 @@ class Client(models.Model):
     class Meta:
         ordering = ['name']
 
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
+
     def __str__(self):
+
+
         return f"{self.name} ({self.initials})"
 
 
-class Project(models.Model):
+class Project(TenantModel):
     """Projects associated with a client"""
+    class TenantMeta:
+        tenant_field_name = 'tenant_id'
+
+    tenant = TenantForeignKey(Tenant, on_delete=models.CASCADE, related_name='projects')
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='projects')
     name = models.CharField(max_length=255)
     abbreviation = models.CharField(max_length=5, help_text="e.g. NI for Nike")
@@ -104,9 +199,21 @@ class Project(models.Model):
 
     class Meta:
         ordering = ['name']
-        unique_together = ['client', 'name']
+        unique_together = ['tenant', 'client', 'name'] # Unique project name per client per tenant
+
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
 
     def __str__(self):
+
+
         return f"{self.client.name} - {self.name} ({self.abbreviation})"
 
     def save(self, *args, **kwargs):
@@ -116,8 +223,12 @@ class Project(models.Model):
         super().save(*args, **kwargs)
 
 
-class Product(models.Model):
+class Product(TenantModel):
     """Product/Service library for reusable invoice items"""
+    class TenantMeta:
+        tenant_field_name = 'tenant_id'
+
+    tenant = TenantForeignKey(Tenant, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     default_unit_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -127,12 +238,29 @@ class Product(models.Model):
     class Meta:
         ordering = ['name']
 
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
+
     def __str__(self):
+
+
         return f"{self.name} (€{self.default_unit_price})"
 
 
-class Invoice(models.Model):
+class Invoice(TenantModel):
     """Invoice model"""
+    class TenantMeta:
+        tenant_field_name = 'tenant_id'
+
+    tenant = TenantForeignKey(Tenant, on_delete=models.CASCADE, related_name='invoices')
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_invoices')
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('sent', 'Sent'),
@@ -182,7 +310,19 @@ class Invoice(models.Model):
     class Meta:
         ordering = ['-global_sequence']
 
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
+
     def __str__(self):
+
+
         return f"Invoice {self.invoice_number}"
 
     @property
@@ -258,8 +398,20 @@ class DocumentArchive(Client):
         verbose_name_plural = "Document Archive"
 
 
-class InvoiceItem(models.Model):
+class EstimatedTax(Invoice):
+    """Proxy model for Estimated Tax view in admin"""
+    class Meta:
+        proxy = True
+        verbose_name = "Estimated Tax"
+        verbose_name_plural = "Estimated Tax"
+
+
+class InvoiceItem(TenantModel):
     """Invoice line item model"""
+    class TenantMeta:
+        tenant_field_name = 'tenant_id'
+
+    tenant = TenantForeignKey(Tenant, on_delete=models.CASCADE, related_name='invoice_items')
     ITEM_TYPE_CHOICES = [
         ('service', 'Service / Leistung'),
         ('expense', 'Expense / Spesen'),
@@ -282,13 +434,25 @@ class InvoiceItem(models.Model):
     class Meta:
         ordering = ['order', 'id']
 
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
+
     def __str__(self):
+
+
         return f"{self.description} - {self.invoice.invoice_number}"
 
     def total(self):
         """Calculate line item total based on type"""
         if self.item_type == 'mileage':
-            company = CompanyProfile.get_instance()
+            company = CompanyProfile.get_instance(self.tenant)
             total_rate = company.mileage_base_rate + (Decimal(self.num_people - 1) * company.mileage_extra_person_rate)
             return self.quantity * total_rate
         
@@ -297,6 +461,70 @@ class InvoiceItem(models.Model):
     def get_unit_rate_display(self):
         """Helper to get the actual rate used for display"""
         if self.item_type == 'mileage':
-            company = CompanyProfile.get_instance()
+            company = CompanyProfile.get_instance(self.tenant)
             return company.mileage_base_rate + (Decimal(self.num_people - 1) * company.mileage_extra_person_rate)
         return self.unit_price
+
+
+class TaxYear(TenantModel):
+    """Configuration for Tax Years to support historical data per tenant"""
+    class TenantMeta:
+        tenant_field_name = 'tenant_id'
+
+    tenant = TenantForeignKey(Tenant, on_delete=models.CASCADE, related_name='tax_years')
+    year = models.PositiveIntegerField(help_text="e.g. 2024")
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-year']
+        unique_together = ['tenant', 'year']
+
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
+
+    def __str__(self):
+
+
+        return str(self.year)
+
+
+class TaxBracket(TenantModel):
+    """Progressive tax brackets for a specific year per tenant"""
+    class TenantMeta:
+        tenant_field_name = 'tenant_id'
+
+    tenant = TenantForeignKey(Tenant, on_delete=models.CASCADE, related_name='tax_brackets')
+    tax_year = models.ForeignKey(TaxYear, on_delete=models.CASCADE, related_name='brackets')
+    lower_limit = models.DecimalField(max_digits=12, decimal_places=2, help_text="Income from this amount")
+    upper_limit = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Income up to this amount (leave blank for infinite)")
+    rate = models.DecimalField(max_digits=5, decimal_places=2, help_text="Tax rate in percentage (e.g. 20.00)")
+    description = models.CharField(max_length=255, blank=True, help_text="Label for display, e.g. '20% (12k-20k)'")
+    
+    class Meta:
+        ordering = ['lower_limit']
+        verbose_name = "Tax Bracket"
+        verbose_name_plural = "Tax Brackets"
+
+
+
+    @property
+    def tenant_field(self):
+        return 'id'
+
+    @property
+    def tenant_value(self):
+        return self.id
+
+    def __str__(self):
+
+
+        upper_str = f"€{self.upper_limit:,.0f}" if self.upper_limit else "∞"
+        return f"{self.tax_year}: {self.rate}% (€{self.lower_limit:,.0f} - {upper_str})"
