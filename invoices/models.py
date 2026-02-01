@@ -158,9 +158,7 @@ class CompanyProfile(TenantMixin, models.Model):
 
 
     def __str__(self):
-
-
-        return f"Profile for {self.tenant.name}"
+        return self.tenant.owner.username
 
     def save(self, *args, **kwargs):
         """Ensure only one instance exists per tenant"""

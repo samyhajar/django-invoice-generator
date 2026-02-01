@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.shortcuts import redirect
+from django.urls import reverse
 from unfold.admin import ModelAdmin, TabularInline
 from .models import Tenant, Client, Project, Invoice, InvoiceItem, CompanyProfile, Product, VATReport, DocumentArchive, TaxYear, TaxBracket, EstimatedTax, UserProfile
 from . import models as from_models
@@ -62,35 +64,62 @@ class CompanyProfileAdmin(RoleIsolatedAdmin):
     """Admin for singleton CompanyProfile"""
     
     def has_add_permission(self, request):
-        # Only allow adding if no instance exists
-        return not CompanyProfile.objects.exists()
+        # Only allow adding if no instance exists for the tenant
+        return not self.get_queryset(request).exists()
     
     def has_delete_permission(self, request, obj=None):
         # Prevent deletion of company profile
         return False
+
+    def changelist_view(self, request, extra_context=None):
+        """Redirect directly to the singleton instance's edit page"""
+        obj = self.get_queryset(request).first()
+        if obj:
+            return redirect(reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_change", args=(obj.pk,)))
+        # If no profile exists, redirect to the add page
+        return redirect(reverse(f"admin:{self.model._meta.app_label}_{self.model._meta.model_name}_add"))
     
     fieldsets = (
-        ('Company Information', {
+        ('Company Essentials', {
             'fields': (
                 ('company_name', 'display_company_name'),
-                ('address', 'display_address'),
+                'address', 
+                ('display_address',),
+            ),
+            'classes': ['unfold-grid', 'unfold-grid-cols-1 md:unfold-grid-cols-2', 'mb-8']
+        }),
+        ('Contact Details', {
+            'fields': (
                 ('email', 'display_email'),
                 ('phone', 'display_phone'),
-            )
+            ),
+            'classes': ['unfold-grid', 'unfold-grid-cols-1 md:unfold-grid-cols-2', 'mb-8']
         }),
-        ('Austria-Specific', {
-            'fields': ('uid', 'iban'),
-            'description': 'Austrian tax and banking information'
+        ('Austrian Business Identity', {
+            'fields': (
+                ('uid', 'iban'),
+            ),
+            'description': 'Tax and banking information for Austrian compliance.',
+            'classes': ['unfold-grid', 'unfold-grid-cols-1 md:unfold-grid-cols-2', 'mb-8']
         }),
         ('Branding', {
-            'fields': (('logo', 'display_logo'),)
+            'fields': (
+                ('logo', 'display_logo'),
+            ),
+            'classes': ['unfold-grid', 'unfold-grid-cols-1', 'mb-8']
         }),
         ('Mileage Rates', {
-            'fields': (('mileage_base_rate', 'mileage_extra_person_rate'),),
-            'description': 'Configure universal rates for mileage calculations'
+            'fields': (
+                ('mileage_base_rate', 'mileage_extra_person_rate'),
+            ),
+            'description': 'Universal rates used for mileage calculations across all projects.',
+            'classes': ['unfold-grid', 'unfold-grid-cols-1 md:unfold-grid-cols-2', 'mb-8']
         }),
-        ('Payment Terms', {
-            'fields': ('payment_terms',)
+        ('Default Payment Terms', {
+            'fields': (
+                'payment_terms',
+            ),
+            'classes': ['unfold-grid', 'unfold-grid-cols-1', 'mb-4']
         }),
     )
 
