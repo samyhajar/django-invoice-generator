@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
@@ -8,35 +9,44 @@ from .storage import get_client_invoice_path, ensure_project_folder
 
 def generate_pdf_file(invoice):
     """Generate raw PDF bytes for an invoice"""
-    company = CompanyProfile.get_instance()
+    company = CompanyProfile.get_instance(invoice.tenant)
     
     # Determine VAT label based on invoice language
     vat_label = "MwSt" if invoice.language == 'de' else "VAT"
     
-    # Use invoice payment notes if provided, otherwise use company default
-    payment_info = invoice.payment_notes if invoice.payment_notes else company.payment_terms
+    # Use company default for payment info
+    payment_info = company.payment_terms
     
-    # Group items by VAT applicability for two-table layout
+    # Group items by type
     items = invoice.items.all()
-    vatable_items = items.filter(apply_vat=True)
-    non_vatable_items = items.filter(apply_vat=False)
+    service_items = items.filter(item_type='service')
+    expense_items = items.filter(item_type='expense')
+    mileage_items = items.filter(item_type='mileage')
     
-    # Calculate subtotals
-    vatable_net = sum(item.total() for item in vatable_items)
-    vat_amount = invoice.calculate_vat()
-    non_vatable_net = sum(item.total() for item in non_vatable_items)
-    gross_total = vatable_net + vat_amount + non_vatable_net
+    # Calculate separate totals
+    service_net = sum(item.total() for item in service_items)
+    # VAT only applies to items where apply_vat=True (usually services)
+    service_vat = sum(item.total() for item in service_items if item.apply_vat) * (invoice.vat_rate / Decimal('100'))
+    service_gross = service_net + service_vat
+    
+    expense_total = sum(item.total() for item in expense_items)
+    mileage_total = sum(item.total() for item in mileage_items)
+    
+    gross_total = service_gross + expense_total + mileage_total
     
     # Render HTML template
     html_string = render_to_string('invoices/invoice_pdf.html', {
         'invoice': invoice,
         'client': invoice.project.client,
         'company': company,
-        'vatable_items': vatable_items,
-        'non_vatable_items': non_vatable_items,
-        'vatable_net': vatable_net,
-        'non_vatable_net': non_vatable_net,
-        'vat_amount': vat_amount,
+        'service_items': service_items,
+        'expense_items': expense_items,
+        'mileage_items': mileage_items,
+        'service_net': service_net,
+        'service_vat': service_vat,
+        'service_gross': service_gross,
+        'expense_total': expense_total,
+        'mileage_total': mileage_total,
         'gross_total': gross_total,
         'vat_label': vat_label,
         'payment_info': payment_info,

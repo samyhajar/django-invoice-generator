@@ -26,6 +26,24 @@ class RoleIsolatedAdmin(ModelAdmin):
             obj.creator = request.user
         super().save_model(request, obj, form, change)
 
+    def get_exclude(self, request, obj=None):
+        """Hide tenant and creator fields for non-superusers"""
+        exclude = super().get_exclude(request, obj)
+        if exclude is None:
+            exclude = []
+        else:
+            exclude = list(exclude)
+            
+        if not request.user.is_superuser:
+            # Hide tenant and creator if they exist on the model
+            model_fields = [f.name for f in self.model._meta.fields]
+            if 'tenant' in model_fields:
+                exclude.append('tenant')
+            if 'creator' in model_fields:
+                exclude.append('creator')
+                
+        return exclude
+
 @admin.register(UserProfile)
 class UserProfileAdmin(ModelAdmin):
     list_display = ['user', 'tenant', 'role']
@@ -79,7 +97,7 @@ class CompanyProfileAdmin(RoleIsolatedAdmin):
 
 @admin.register(VATReport)
 class VATReportAdmin(RoleIsolatedAdmin):
-    list_display = ['invoice_number', 'get_client', 'date', 'get_net_total_display', 'get_vat_display', 'get_gross_total_display', 'status']
+    list_display = ['invoice_number', 'get_client', 'date', 'get_net_total_display', 'get_vat_display', 'get_gross_total_display', 'status_badge']
     list_filter = ['date', 'status', 'project__client']
     readonly_fields = ['invoice_number', 'get_client', 'date', 'due_date', 'status', 'language', 'vat_rate']
     
@@ -170,6 +188,22 @@ class VATReportAdmin(RoleIsolatedAdmin):
     def get_gross_total_display(self, obj):
         return f"€{obj.get_gross_total():.2f}"
 
+    @admin.display(description='Status')
+    def status_badge(self, obj):
+        from django.utils.html import format_html
+        colors = {
+            'paid': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+            'sent': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+            'draft': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+            'canceled': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        }
+        color_class = colors.get(obj.status, colors['draft'])
+        return format_html(
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {}">{}</span>',
+            color_class,
+            obj.get_status_display()
+        )
+
     def has_add_permission(self, request):
         return False
 
@@ -185,9 +219,18 @@ class ProductAdmin(RoleIsolatedAdmin):
 
 @admin.register(Client)
 class ClientAdmin(RoleIsolatedAdmin):
-    list_display = ['name', 'initials', 'email', 'phone', 'created_at']
-    search_fields = ['name', 'email', 'initials']
+    list_display = ['name', 'name_extension', 'initials', 'email', 'phone', 'uid', 'created_at']
+    search_fields = ['name', 'name_extension', 'email', 'initials', 'uid']
     list_filter = ['created_at']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': (('name', 'name_extension'), 'initials')
+        }),
+        ('Contact Details', {
+            'fields': ('email', 'phone', 'uid', 'address')
+        }),
+    )
 
 
 @admin.register(Project)
@@ -209,12 +252,10 @@ class ServiceItemInline(TabularInline):
     def get_queryset(self, request):
         return super().get_queryset(request).filter(item_type='service')
 
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
-        for instance in instances:
-            instance.item_type = 'service'
-            instance.save()
-        formset.save_m2m()
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.item_type = 'service'
+        return formset
 
 class ExpenseItemInline(TabularInline):
     model = InvoiceItem
@@ -226,12 +267,10 @@ class ExpenseItemInline(TabularInline):
     def get_queryset(self, request):
         return super().get_queryset(request).filter(item_type='expense')
 
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
-        for instance in instances:
-            instance.item_type = 'expense'
-            instance.save()
-        formset.save_m2m()
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.item_type = 'expense'
+        return formset
 
 class MileageItemInline(TabularInline):
     model = InvoiceItem
@@ -243,38 +282,29 @@ class MileageItemInline(TabularInline):
     def get_queryset(self, request):
         return super().get_queryset(request).filter(item_type='mileage')
 
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
-        for instance in instances:
-            instance.item_type = 'mileage'
-            instance.apply_vat = False # Mileage usually no VAT in some contexts, but let user decide? User said "mwst is not applied" for spesen but mileage logic is separate.
-            instance.save()
-        formset.save_m2m()
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.item_type = 'mileage'
+        return formset
 
 
 @admin.register(Invoice)
 class InvoiceAdmin(RoleIsolatedAdmin):
-    list_display = ['global_id_display', 'client_initials_display', 'client_seq_display', 'project_id_display', 'status', 'view_pdf_link', 'mark_paid_button']
+    list_display = ['invoice_number_display', 'client_display', 'date', 'gross_total_display', 'status_badge', 'view_pdf_link', 'mark_paid_button']
     list_filter = ['status', 'language', 'date', 'project__client']
     actions = ['make_paid', 'make_sent']
 
-    @admin.display(description='#', ordering='global_sequence')
-    def global_id_display(self, obj):
-        return f"{obj.global_sequence:03d}" if obj.global_sequence else "-"
+    @admin.display(description='Invoice #', ordering='invoice_number')
+    def invoice_number_display(self, obj):
+        return obj.invoice_number
 
     @admin.display(description='Client')
-    def client_initials_display(self, obj):
-        return obj.project.client.initials.upper() if obj.project else "-"
+    def client_display(self, obj):
+        return obj.project.client.name if obj.project else "-"
 
-    @admin.display(description='Client #')
-    def client_seq_display(self, obj):
-        return f"{obj.client_sequence:02d}" if obj.client_sequence else "-"
-
-    @admin.display(description='Project/Seq')
-    def project_id_display(self, obj):
-        if obj.project and obj.project_sequence:
-            return f"{obj.project.abbreviation.upper()}{obj.project_sequence:02d}"
-        return "-"
+    @admin.display(description='Amount')
+    def gross_total_display(self, obj):
+        return f"€{obj.get_gross_total():.2f}"
 
     @admin.action(description='Mark selected invoices as Paid')
     def make_paid(self, request, queryset):
@@ -288,13 +318,55 @@ class InvoiceAdmin(RoleIsolatedAdmin):
     autocomplete_fields = ['project']
     date_hierarchy = 'date'
     inlines = [ServiceItemInline, ExpenseItemInline, MileageItemInline]
+
+    def save_formset(self, request, form, formset, change):
+        """
+        Handle item_type assignment based on which inline the formset belongs to.
+        Each inline sets formset.item_type in get_formset.
+        """
+        if formset.model == InvoiceItem:
+            instances = formset.save(commit=False)
+            item_type = getattr(formset, 'item_type', None)
+            
+            for instance in instances:
+                if item_type:
+                    instance.item_type = item_type
+                
+                # Special logic for mileage: usually no VAT
+                if item_type == 'mileage':
+                    instance.apply_vat = False
+                    
+                instance.save()
+            formset.save_m2m()
+            
+            # Handle deletions
+            for obj in formset.deleted_objects:
+                obj.delete()
+        else:
+            super().save_formset(request, form, formset, change)
     readonly_fields = ['invoice_number', 'view_pdf_link']
-    exclude = ['vat_label']
+    exclude = ['vat_label', 'payment_notes']
 
     class Media:
         js = ('js/admin_autofill.js',)
 
     
+    @admin.display(description='Status')
+    def status_badge(self, obj):
+        from django.utils.html import format_html
+        colors = {
+            'paid': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+            'sent': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+            'draft': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+            'canceled': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        }
+        color_class = colors.get(obj.status, colors['draft'])
+        return format_html(
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {}">{}</span>',
+            color_class,
+            obj.get_status_display()
+        )
+
     def get_gross_total(self, obj):
         return f"€{obj.get_gross_total():.2f}"
     get_gross_total.short_description = 'Gross Total'
@@ -332,6 +404,9 @@ class InvoiceAdmin(RoleIsolatedAdmin):
              self.message_user(request, f"Invoice {invoice.invoice_number} is already paid.", messages.WARNING)
              
         opts = self.model._meta
+        referer = request.META.get('HTTP_REFERER')
+        if referer:
+            return redirect(referer)
         return redirect(f'admin:{opts.app_label}_{opts.model_name}_changelist')
 
     def mark_paid_button(self, obj):
@@ -341,16 +416,14 @@ class InvoiceAdmin(RoleIsolatedAdmin):
         if obj.status == 'sent':
             url = reverse('admin:invoice-mark-as-paid', args=[obj.pk])
             return format_html(
-                '<a href="{}" title="Mark as Paid" class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors">'
-                '<span class="material-symbols-outlined">payments</span>'
+                '<a href="{}" title="Mark as Paid" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 hover:bg-primary-200 dark:bg-primary-900/40 dark:text-primary-300 dark:hover:bg-primary-900/60 transition-colors">'
+                '<span class="material-symbols-outlined text-sm">check_circle</span>'
+                '<span>Pay</span>'
                 '</a>',
                 url
             )
         return "-"
     mark_paid_button.short_description = "Action"
-    mark_paid_button.allow_tags = True
-
-
     mark_paid_button.allow_tags = True
 
 

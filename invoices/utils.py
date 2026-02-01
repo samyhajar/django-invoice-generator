@@ -34,21 +34,23 @@ def calculate_progressive_tax(income: Decimal, year: int) -> dict:
         
         if income <= lower:
             # Income doesn't reach this bracket
-            break
-            
-        # Calculate taxable amount in this bracket
-        if upper is None:
-            # Last bracket (infinite)
-            taxable_in_bracket = income - lower
+            taxable_in_bracket = Decimal('0.00')
+            tax_for_bracket = Decimal('0.00')
         else:
-            if income > upper:
-                # Income covers full bracket
-                taxable_in_bracket = upper - lower
-            else:
-                # Income falls within this bracket
+            # Calculate taxable amount in this bracket
+            if upper is None:
+                # Last bracket (infinite)
                 taxable_in_bracket = income - lower
+            else:
+                if income > upper:
+                    # Income covers full bracket
+                    taxable_in_bracket = upper - lower
+                else:
+                    # Income falls within this bracket
+                    taxable_in_bracket = income - lower
+            
+            tax_for_bracket = taxable_in_bracket * rate
         
-        tax_for_bracket = taxable_in_bracket * rate
         total_tax += tax_for_bracket
         
         breakdown.append({

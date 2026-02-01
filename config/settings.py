@@ -53,8 +53,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'invoices',
-    'django_multitenant',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -81,6 +81,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'invoices.context_processors.company_context',
             ],
         },
     },
@@ -169,6 +170,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Unfold Admin Configuration
+
+# Reload triggered for new template tags
 UNFOLD = {
     "SITE_TITLE": "Invoice Generator",
     "SITE_HEADER": "Invoice Admin",
@@ -190,6 +193,3 @@ UNFOLD = {
         },
     },
 }
-
-# Multi-tenancy
-TENANT_MODEL = 'invoices.Tenant'
