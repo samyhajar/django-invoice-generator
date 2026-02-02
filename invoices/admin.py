@@ -267,10 +267,25 @@ class ClientAdmin(RoleIsolatedAdmin):
 
 @admin.register(Project)
 class ProjectAdmin(RoleIsolatedAdmin):
-    list_display = ['name', 'abbreviation', 'client', 'created_at']
+    list_display = ['name', 'abbreviation', 'client', 'created_at', 'download_zip_button']
     search_fields = ['name', 'abbreviation', 'client__name']
     list_filter = ['client', 'created_at']
     autocomplete_fields = ['client']
+
+    @admin.display(description='Actions')
+    def download_zip_button(self, obj):
+        if obj.pk:
+            from django.utils.html import format_html
+            from django.urls import reverse
+            url = reverse('download_project_zip', args=[obj.pk])
+            return format_html(
+                '<a href="{}" class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium">'
+                '<span class="material-symbols-outlined text-lg">folder_zip</span>'
+                'Download'
+                '</a>',
+                url
+            )
+        return "-"
 
 
 class ServiceItemInline(TabularInline):
@@ -318,6 +333,7 @@ class MileageItemInline(TabularInline):
         formset = super().get_formset(request, obj, **kwargs)
         formset.item_type = 'mileage'
         return formset
+
 
 
 @admin.register(Invoice)
@@ -381,7 +397,7 @@ class InvoiceAdmin(RoleIsolatedAdmin):
     exclude = ['vat_label', 'payment_notes']
 
     class Media:
-        js = ('js/admin_autofill.js',)
+        js = ('js/admin_autofill.js', 'js/date_warning.js')
 
     
     @admin.display(description='Status')
@@ -545,6 +561,7 @@ class DocumentArchiveAdmin(RoleIsolatedAdmin):
                     })
                 
                 project_data.append({
+                    'id': project.id,
                     'name': project.name,
                     'invoices_list': invoice_list,
                     'count': count

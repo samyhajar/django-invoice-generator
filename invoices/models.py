@@ -313,8 +313,6 @@ class Invoice(TenantMixin):
 
 
     def __str__(self):
-
-
         return f"Invoice {self.invoice_number}"
 
     @property

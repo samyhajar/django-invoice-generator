@@ -30,7 +30,12 @@
                 <div class="space-y-2">
                     <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                         <span class="material-symbols-outlined text-sm">folder_open</span>
-                        {{ project.name }} ({{ project.count }})
+                        <span class="flex-1">{{ project.name }} ({{ project.count }})</span>
+                        <a href="{% url 'download_project_zip' project.id %}"
+                            class="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors ml-2"
+                            title="Download Project ZIP">
+                            <span class="material-symbols-outlined text-sm">download</span>
+                        </a>
                     </div>
                     <div class="space-y-2 pl-4">
                         {% for invoice in project.invoices_list %}

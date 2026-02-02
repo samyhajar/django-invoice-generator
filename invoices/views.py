@@ -3,8 +3,10 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 from weasyprint import HTML
-from .models import Invoice, CompanyProfile, Product
+from .models import Invoice, CompanyProfile, Product, Project
 from .storage import get_client_invoice_path, ensure_project_folder
+import zipfile
+import io
 
 
 def generate_pdf_file(invoice):
@@ -116,3 +118,31 @@ def tax_overview(request):
     }
     
     return render(request, 'invoices/tax_detail.html', context)
+
+
+def download_project_zip(request, project_id):
+    """Generate and download a ZIP file containing all invoices for a project"""
+    project = get_object_or_404(Project, pk=project_id)
+    
+    # Create in-memory ZIP
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        client_folder = project.client.name.replace('/', '_')
+        
+        for invoice in project.invoices.all():
+            # Generate PDF content
+            pdf_content = generate_pdf_file(invoice)
+            
+            # Filename: Client Name/InvoiceNumber.pdf
+            filename = f"{client_folder}/{invoice.invoice_number}.pdf"
+            zip_file.writestr(filename, pdf_content)
+    
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/zip')
+    
+    # filename: ClientName_ProjectName_Invoices.zip
+    from django.utils.text import slugify
+    zip_filename = f"{slugify(project.client.name)}_{slugify(project.name)}_invoices.zip"
+    response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+    
+    return response
