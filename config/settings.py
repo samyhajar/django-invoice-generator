@@ -27,10 +27,10 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-g^237maporb6+y3p@04_&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,.railway.app', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,.railway.app,.onrender.com', cast=Csv())
 
 # CSRF & Security Settings
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://*.railway.app', cast=Csv())
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://*.railway.app,https://*.onrender.com', cast=Csv())
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
