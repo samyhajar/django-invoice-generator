@@ -12,13 +12,15 @@ from .models import (
 @receiver(post_save, sender=User)
 def create_user_tenant_profile(sender, instance, created, **kwargs):
     if created:
-        # Create a default tenant for the user
-        tenant_name = f"{instance.username}'s Tenant"
-        tenant = Tenant.objects.create(name=tenant_name, owner=instance)
-        
-        # Create UserProfile
-        role = 'admin' if instance.is_superuser else 'user'
-        UserProfile.objects.create(user=instance, tenant=tenant, role=role)
+        # Check if UserProfile already exists (might be created by admin inline)
+        if not hasattr(instance, 'profile'):
+            # Create a default tenant for the user
+            tenant_name = f"{instance.username}'s Tenant"
+            tenant = Tenant.objects.create(name=tenant_name, owner=instance)
+            
+            # Create UserProfile
+            role = 'admin' if instance.is_superuser else 'user'
+            UserProfile.objects.create(user=instance, tenant=tenant, role=role)
         
         # Grant standard permissions to non-superusers
         if not instance.is_superuser:
