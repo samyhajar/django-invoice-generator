@@ -35,6 +35,7 @@ RUN python manage.py collectstatic --noinput
 # Expose port
 EXPOSE 8000
 
-# Run migrations and start server
+# Run migrations, create superuser, and start server
 CMD python manage.py migrate && \
+    python manage.py create_superuser && \
     gunicorn config.wsgi --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120
