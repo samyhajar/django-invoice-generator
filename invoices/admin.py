@@ -64,6 +64,12 @@ class TenantAdmin(ModelAdmin):
 class CompanyProfileAdmin(RoleIsolatedAdmin):
     """Admin for singleton CompanyProfile"""
     
+    def has_module_permission(self, request):
+        """Hide from superadmin, show to tenant users"""
+        if request.user.is_superuser:
+            return False
+        return super().has_module_permission(request)
+    
     def has_add_permission(self, request):
         # Only allow adding if no instance exists for the tenant
         return not self.get_queryset(request).exists()
@@ -127,6 +133,12 @@ class CompanyProfileAdmin(RoleIsolatedAdmin):
 
 @admin.register(VATReport)
 class VATReportAdmin(RoleIsolatedAdmin):
+    def has_module_permission(self, request):
+        """Hide from superadmin, show to tenant users"""
+        if request.user.is_superuser:
+            return False
+        return super().has_module_permission(request)
+    
     list_display = ['invoice_number', 'get_client', 'date', 'get_net_total_display', 'get_vat_display', 'get_gross_total_display', 'status_badge']
     list_filter = ['date', 'status', 'project__client']
     readonly_fields = ['invoice_number', 'get_client', 'date', 'due_date', 'status', 'language', 'vat_rate']
@@ -247,6 +259,12 @@ class VATReportAdmin(RoleIsolatedAdmin):
 
 @admin.register(Product)
 class ProductAdmin(RoleIsolatedAdmin):
+    def has_module_permission(self, request):
+        """Hide from superadmin, show to tenant users"""
+        if request.user.is_superuser:
+            return False
+        return super().has_module_permission(request)
+    
     list_display = ['name', 'default_unit_price', 'created_at']
     search_fields = ['name']
 
@@ -269,6 +287,12 @@ class ClientAdmin(RoleIsolatedAdmin):
 
 @admin.register(Project)
 class ProjectAdmin(RoleIsolatedAdmin):
+    def has_module_permission(self, request):
+        """Hide from superadmin, show to tenant users"""
+        if request.user.is_superuser:
+            return False
+        return super().has_module_permission(request)
+    
     list_display = ['name', 'abbreviation', 'client', 'created_at', 'download_zip_button']
     search_fields = ['name', 'abbreviation', 'client__name']
     list_filter = ['client', 'created_at']
@@ -340,6 +364,12 @@ class MileageItemInline(TabularInline):
 
 @admin.register(Invoice)
 class InvoiceAdmin(RoleIsolatedAdmin):
+    def has_module_permission(self, request):
+        """Hide from superadmin, show to tenant users"""
+        if request.user.is_superuser:
+            return False
+        return super().has_module_permission(request)
+    
     list_display = ['invoice_number_display', 'client_display', 'date', 'gross_total_display', 'status_badge', 'view_pdf_link', 'mark_paid_button']
     list_filter = ['status', 'language', 'date', 'project__client']
     actions = ['make_paid', 'make_sent']
@@ -634,6 +664,12 @@ class EstimatedTaxAdmin(RoleIsolatedAdmin):
 
 @admin.register(from_models.DocumentArchive)
 class DocumentArchiveAdmin(RoleIsolatedAdmin):
+    def has_module_permission(self, request):
+        """Hide from superadmin, show to tenant users"""
+        if request.user.is_superuser:
+            return False
+        return super().has_module_permission(request)
+    
     change_list_template = "admin/invoices/documentarchive/change_list.html"
 
     def changelist_view(self, request, extra_context=None):
