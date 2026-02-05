@@ -1,13 +1,97 @@
 from django.utils import timezone
 from decimal import Decimal
-from .models import Invoice, Client
+from .models import Invoice, Client, Tenant, UserProfile
 from .utils import calculate_progressive_tax
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 def get_dashboard_stats(request, context):
     """
     Dashboard callback for django-unfold.
-    Returns comprehensive stats cards for the admin dashboard.
+    Returns different stats based on user role:
+    - Superadmin: System metrics (users, tenants, activity)
+    - Tenant users: Financial metrics (revenue, invoices, VAT)
     """
+    
+    # Check if user is superadmin (no tenant association)
+    is_superadmin = request.user.is_superuser
+    
+    if is_superadmin:
+        # SUPERADMIN DASHBOARD: System metrics
+        return get_superadmin_dashboard(request, context)
+    else:
+        # TENANT USER DASHBOARD: Financial metrics
+        return get_tenant_dashboard(request, context)
+
+
+def get_superadmin_dashboard(request, context):
+    """Dashboard for superadmin showing system-wide metrics"""
+    from django.utils.formats import number_format
+    
+    # Total counts
+    total_users = User.objects.count()
+    total_tenants = Tenant.objects.count()
+    total_clients = Client.objects.count()
+    total_user_profiles = UserProfile.objects.count()
+    
+    # Recent activity (last 30 days)
+    thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+    new_users_30d = User.objects.filter(date_joined__gte=thirty_days_ago).count()
+    new_tenants_30d = Tenant.objects.filter(created_at__gte=thirty_days_ago).count()
+    
+    # Recent users
+    recent_users = User.objects.order_by('-date_joined')[:10]
+    recent_users_list = []
+    for user in recent_users:
+        try:
+            tenant_name = user.profile.tenant.name if hasattr(user, 'profile') and user.profile.tenant else "No Tenant"
+        except:
+            tenant_name = "No Tenant"
+        
+        recent_users_list.append({
+            'username': user.username,
+            'email': user.email,
+            'date_joined': user.date_joined,
+            'tenant': tenant_name,
+            'is_active': user.is_active,
+        })
+    
+    context.update({
+        "cards": [
+            {
+                "title": "Total Users",
+                "metric": str(total_users),
+                "footer": f"+{new_users_30d} in last 30 days",
+                "icon": "person",
+            },
+            {
+                "title": "Total Tenants",
+                "metric": str(total_tenants),
+                "footer": f"+{new_tenants_30d} in last 30 days",
+                "icon": "business",
+            },
+            {
+                "title": "Total Clients",
+                "metric": str(total_clients),
+                "footer": "Across all tenants",
+                "icon": "groups",
+            },
+            {
+                "title": "User Profiles",
+                "metric": str(total_user_profiles),
+                "footer": "Active user-tenant associations",
+                "icon": "badge",
+            },
+        ],
+        "recent_activity": recent_users_list,
+    })
+    
+    return context
+
+
+def get_tenant_dashboard(request, context):
+    """Dashboard for tenant users showing financial metrics"""
     now = timezone.now()
     current_year = now.year
     
