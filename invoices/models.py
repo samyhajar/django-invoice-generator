@@ -40,7 +40,6 @@ class UserProfile(models.Model):
     ROLE_CHOICES = [
         ('admin', 'Admin'),
         ('user', 'User'),
-        ('customer', 'Customer'),
     ]
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
