@@ -6,14 +6,16 @@ def company_context(request):
     Adds the tenant-specific company profile to the context.
     This allows displaying the tenant's logo and name in the sidebar.
     """
+    profile = None
+    
     if request.user.is_authenticated:
         tenant = get_current_tenant()
         if tenant:
             try:
                 profile = CompanyProfile.get_instance(tenant)
-                return {
-                    'tenant_company_profile': profile,
-                }
             except Exception:
                 pass
-    return {}
+    
+    return {
+        'tenant_company_profile': profile,
+    }
