@@ -1,6 +1,15 @@
 (function () {
     'use strict';
 
+    // Only run on add/change pages, not on the list view
+    const body = document.body;
+    const isChangeForm = body.classList.contains('change-form') || body.classList.contains('add-form');
+
+    if (!isChangeForm) {
+        // Exit early if we're on the list view
+        return;
+    }
+
     function checkDate() {
         const dateField = document.querySelector('#id_date');
         if (!dateField) return;
