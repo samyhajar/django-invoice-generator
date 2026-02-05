@@ -48,6 +48,7 @@
             font-weight: 600;
             color: #000;
             margin-bottom: 2px;
+            margin-top: 20px;
             letter-spacing: 2px;
         }
 
@@ -222,10 +223,27 @@
             font-size: 9pt;
             color: #666;
         }
+
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 150pt;
+            font-weight: bold;
+            color: rgba(128, 128, 128, 0.2);
+            z-index: 1000;
+            pointer-events: none;
+            width: 100%;
+            text-align: center;
+        }
     </style>
 </head>
 
 <body>
+    {% if is_invalid %}
+    <div class="watermark">INVALID</div>
+    {% endif %}
     <div class="header">
         {% if company.logo and company.display_logo %}
         <img src="file://{{ company.logo.path }}" alt="{{ company.company_name }}" class="company-logo">
@@ -268,7 +286,9 @@
         <div class="meta-row">
             <div class="meta-label">{% if invoice.language == 'de' %}Datum:{% else %}Date:{% endif %}</div>
             <div class="meta-value promiment">
-                {% if invoice.language == 'de' %}{{ invoice.date|date:"d.m.Y" }}{% else %}{{ invoice.date|date:"d F, Y" }}{% endif %}
+                {% if invoice.language == 'de' %}{{ invoice.date|date:"d.m.Y" }}{% else %}
+                {{ invoice.date|date:"d F,Y"}}
+                {% endif %}
             </div>
         </div>
     </div>
@@ -282,7 +302,8 @@
                 <th style="width: 35%;">DETAILS</th>
                 <th class="right" style="width: 10%;">{% if invoice.language == 'de' %}MENGE{% else %}QTY{% endif %}
                 </th>
-                <th class="right" style="width: 15%;">{% if invoice.language == 'de' %}EINZELPREIS{% else %}UNIT PRICE{% endif %}</th>
+                <th class="right" style="width: 15%;">{% if invoice.language == 'de' %}EINZELPREIS{% else %}UNIT
+                    PRICE{%endif %}</th>
                 <th class="right" style="width: 15%;">SUMME</th>
             </tr>
         </thead>
@@ -299,7 +320,7 @@
             {# Service Subtotal #}
             <tr>
                 <td colspan="2" style="font-weight: 600; background: #f9f9f9;">{% if invoice.language == 'de' %}SUMME
-                    LEISTUNG{% else %}SERVICE TOTAL{% endif %}</td>
+                    LEISTUNG (NETTO){% else %}SERVICE TOTAL{% endif %}</td>
                 <td colspan="2" style="border: none;"></td>
                 <td class="right" style="font-weight: 600; background: #f9f9f9;">{{ service_net|currency_de }} €</td>
             </tr>
@@ -309,7 +330,8 @@
                 <td class="right" style="color: #666;">{{ service_vat|currency_de }} €</td>
             </tr>
             <tr>
-                <td colspan="2" style="font-weight: 600;">{% if invoice.language == 'de' %}GESAMT LEISTUNG{% else %}SERVICE GROSS TOTAL{% endif %}</td>
+                <td colspan="2" style="font-weight: 600;">
+                    {% if invoice.language == 'de' %}SUMME LEISTUNG (BRUTTO){%else%}SERVICE GROSS TOTAL{% endif %}</td>
                 <td colspan="2" style="border: none;"></td>
                 <td class="right" style="font-weight: 600;">{{ service_gross|currency_de }} €</td>
             </tr>
@@ -327,7 +349,8 @@
                 </th>
                 <th class="right" style="width: 10%;">{% if invoice.language == 'de' %}MENGE{% else %}QTY{% endif %}
                 </th>
-                <th class="right" style="width: 15%;">{% if invoice.language == 'de' %}EINZELPREIS{% else %}UNIT PRICE{% endif %}</th>
+                <th class="right" style="width: 15%;">{% if invoice.language == 'de' %}EINZELPREIS{% else %}UNIT
+                    PRICE{%endif %}</th>
                 <th class="right" style="width: 15%;">SUMME</th>
             </tr>
         </thead>
@@ -343,8 +366,8 @@
             {% endfor %}
             {# Expense Subtotal #}
             <tr>
-                <td colspan="2" style="font-weight: 600; background: #f9f9f9;">{% if invoice.language == 'de' %}SUMME
-                    SPESEN{% else %}EXPENSE TOTAL{% endif %}</td>
+                <td colspan="2" style="font-weight: 600; background: #f9f9f9;">
+                    {% if invoice.language == 'de'%}SUMMESPESEN{% else %}EXPENSE TOTAL{% endif %}</td>
                 <td colspan="2" style="border: none;"></td>
                 <td class="right" style="font-weight: 600; background: #f9f9f9;">{{ expense_total|currency_de }} €</td>
             </tr>
@@ -370,7 +393,9 @@
                 <td>{{ item.description }}</td>
                 <td>
                     <small style="color: #666;">
-                        {% if invoice.language == 'de' %}({{ item.num_people }} Person{{ item.num_people|pluralize:"en" }}){% else %}({{ item.num_people }} Person{{ item.num_people|pluralize }}){% endif %}
+                        {% if invoice.language == 'de' %}
+                        ({{ item.num_people }} Person{{ item.num_people|pluralize:"en" }})
+                        {% else %}({{ item.num_people }} Person{{ item.num_people|pluralize }}){% endif %}
                     </small>
                 </td>
                 <td class="right">{{ item.quantity|floatformat:"-2" }}</td>
@@ -394,7 +419,8 @@
         <table style="width: 350px; margin-left: auto; border: none; margin-top: 0;">
             <tr style="border: 2px solid #000;">
                 <td class="right" style="font-size: 14pt; font-weight: 600; padding: 10px; width: 50%;">GESAMT</td>
-                <td class="right" style="font-size: 14pt; font-weight: 600; padding: 10px; width: 50%;">{{ gross_total|currency_de }} €</td>
+                <td class="right" style="font-size: 14pt; font-weight: 600; padding: 10px; width: 50%;">
+                    {{gross_total|currency_de }} €</td>
             </tr>
         </table>
     </div>
@@ -410,7 +436,8 @@
         <div class="payment-row">
             <div class="payment-label">{% if invoice.language == 'de' %}ZAHLBAR BIS:{% else %}DUE DATE:{% endif %}</div>
             <div class="payment-value prominent" style="color: #d97706;">
-                {% if invoice.language == 'de' %}{{ invoice.due_date|date:"d.m.Y" }}{% else %}{{ invoice.due_date|date:"d F, Y" }}{% endif %}
+                {% if invoice.language == 'de' %}
+                {{ invoice.due_date|date:"d.m.Y" }}{% else %}{{invoice.due_date|date:"d F, Y" }}{% endif %}
             </div>
         </div>
         {% if company.iban %}

@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin, TabularInline
 from .models import Tenant, Client, Project, Invoice, InvoiceItem, CompanyProfile, Product, VATReport, DocumentArchive, TaxYear, TaxBracket, EstimatedTax, UserProfile
 from . import models as from_models
@@ -228,6 +229,7 @@ class VATReportAdmin(RoleIsolatedAdmin):
             'sent': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
             'draft': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
             'canceled': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+            'invalid': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
         }
         color_class = colors.get(obj.status, colors['draft'])
         return format_html(
@@ -394,7 +396,7 @@ class InvoiceAdmin(RoleIsolatedAdmin):
         else:
             super().save_formset(request, form, formset, change)
     readonly_fields = ['invoice_number', 'view_pdf_link']
-    exclude = ['vat_label', 'payment_notes']
+    exclude = ['vat_label', 'payment_notes', 'version', 'parent']
 
     class Media:
         js = ('js/admin_autofill.js', 'js/date_warning.js')
@@ -403,16 +405,20 @@ class InvoiceAdmin(RoleIsolatedAdmin):
     @admin.display(description='Status')
     def status_badge(self, obj):
         from django.utils.html import format_html
-        colors = {
-            'paid': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-            'sent': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-            'draft': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
-            'canceled': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        # Stronger pale colors for better visibility
+        styles = {
+            'draft': 'background-color: #E9D5FF; color: #6B21A8;',  # Purple 200 / 800
+            'sent': 'background-color: #FEF08A; color: #854D0E;',   # Yellow 200 / 800
+            'paid': 'background-color: #BBF7D0; color: #166534;',   # Green 200 / 800
+            'invalid': 'background-color: #FECACA; color: #991B1B;', # Red 200 / 800
         }
-        color_class = colors.get(obj.status, colors['draft'])
+        style = styles.get(obj.status, styles['draft'])
+        # Add common sizing styles: min-width, center text
+        style += " min-width: 100px; justify-content: center;"
+        
         return format_html(
-            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {}">{}</span>',
-            color_class,
+            '<span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold" style="{}">{}</span>',
+            style,
             obj.get_status_display()
         )
 
@@ -438,6 +444,11 @@ class InvoiceAdmin(RoleIsolatedAdmin):
                 self.admin_site.admin_view(self.mark_as_paid_view),
                 name='invoice-mark-as-paid',
             ),
+            path(
+                '<int:invoice_id>/invalidate/',
+                self.admin_site.admin_view(self.invalidate_invoice_view),
+                name='invoice-invalidate',
+            ),
         ]
         return custom_urls + urls
 
@@ -458,20 +469,114 @@ class InvoiceAdmin(RoleIsolatedAdmin):
         if referer:
             return redirect(referer)
         return redirect(f'admin:{opts.app_label}_{opts.model_name}_changelist')
+        
+    def invalidate_invoice_view(self, request, invoice_id):
+        from django.shortcuts import get_object_or_404, redirect
+        from django.contrib import messages
+        from django.urls import reverse
+        
+        invoice = get_object_or_404(Invoice, pk=invoice_id)
+        
+        if invoice.status != 'paid':
+             self.message_user(request, f"Only paid invoices can be invalidated.", messages.ERROR)
+             return redirect(request.META.get('HTTP_REFERER') or f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_changelist')
+
+        # 1. Mark as invalid
+        invoice.status = 'invalid'
+        invoice.save()
+        
+        # 2. Create new invoice (copy)
+        new_invoice = Invoice.objects.get(pk=invoice.pk)
+        new_invoice.pk = None
+        new_invoice.id = None
+        new_invoice.status = 'draft'
+        new_invoice.parent = invoice
+        
+        # Calculate version
+        # If original has versions, this is a sibling? No, parent is the original.
+        # If I invalidate a correction, the new one's parent should probably be the original root?
+        # Or just chain them? "parent = invoice".
+        # Let's say:
+        # A (v1) -> Invalidate -> A (Invalid)
+        # B (A/2) -> Invalidate -> B (Invalid)
+        # C (A/3)
+        # So check if invoice has a parent. If so, new invoice parent is that parent.
+        # If not, new invoice parent is invoice.
+        
+        if invoice.parent:
+            new_invoice.parent = invoice.parent
+            # Find max version of siblings
+            siblings = Invoice.objects.filter(parent=invoice.parent)
+            max_version = 0
+            for s in siblings:
+                if s.version > max_version:
+                    max_version = s.version
+            # Check parent version too? Parent is usually v1 (default)
+            if invoice.parent.version > max_version:
+                max_version = invoice.parent.version
+                
+            new_invoice.version = max_version + 1
+        else:
+            new_invoice.parent = invoice
+            # siblings = Invoice.objects.filter(parent=invoice) ... should be empty if first time
+            new_invoice.version = 2 # First correction is /2? Or /1? 
+            # Prompt said: "recreate an invoice ... YYYY-MM-DD-XXX/Y"
+            # If original is XXX, new is XXX/2?
+            # Let's assume version starts at 1. Next is 2.
+            
+            # Check if there are already versions of this invoice (e.g. if we invalidated it, then undid, then invalidated again?)
+            # Or if we have multiple threads?
+            siblings = Invoice.objects.filter(parent=invoice)
+            max_version = 1
+            for s in siblings:
+                if s.version > max_version:
+                    max_version = s.version
+            new_invoice.version = max_version + 1
+
+        new_invoice.invoice_number = "" # Clear to force regeneration
+        new_invoice.save()
+        
+        # Copy items
+        for item in invoice.items.all():
+            item.pk = None
+            item.id = None
+            item.invoice = new_invoice
+            item.save()
+            
+        self.message_user(request, f"Invoice {invoice.invoice_number} invalidated. New correction invoice created.", messages.SUCCESS)
+
+        # Redirect to the NEW invoice change page
+        return redirect(reverse(f"admin:{self.model._meta.app_label}_{self.model._meta.model_name}_change", args=(new_invoice.pk,)))
 
     def mark_paid_button(self, obj):
         from django.utils.html import format_html
         from django.urls import reverse
         
+        buttons = []
+        
         if obj.status == 'sent':
             url = reverse('admin:invoice-mark-as-paid', args=[obj.pk])
-            return format_html(
+            buttons.append(format_html(
                 '<a href="{}" title="Mark as Paid" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 hover:bg-primary-200 dark:bg-primary-900/40 dark:text-primary-300 dark:hover:bg-primary-900/60 transition-colors">'
                 '<span class="material-symbols-outlined text-sm">check_circle</span>'
                 '<span>Pay</span>'
                 '</a>',
                 url
-            )
+            ))
+            
+        if obj.status == 'paid':
+             url = reverse('admin:invoice-invalidate', args=[obj.pk])
+             buttons.append(format_html(
+                '<a href="{}" title="Invalidate & Recreate" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:hover:bg-purple-900/60 transition-colors">'
+                '<span class="material-symbols-outlined text-sm">replay</span>'
+                '<span>Invalidate</span>'
+                '</a>',
+                url
+            ))
+            
+        if buttons:
+            return format_html('<div class="flex gap-2">{}</div>', mark_safe("".join(buttons)))
+            
         return "-"
     mark_paid_button.short_description = "Action"
     mark_paid_button.allow_tags = True

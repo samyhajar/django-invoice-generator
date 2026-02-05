@@ -263,7 +263,7 @@ class Invoice(TenantMixin):
         ('draft', 'Draft'),
         ('sent', 'Sent'),
         ('paid', 'Paid'),
-        ('cancelled', 'Cancelled'),
+        ('invalid', 'Invalid'),
     ]
 
     LANGUAGE_CHOICES = [
@@ -278,6 +278,10 @@ class Invoice(TenantMixin):
     global_sequence = models.PositiveIntegerField(editable=False, null=True, blank=True)
     client_sequence = models.PositiveIntegerField(editable=False, null=True, blank=True)
     project_sequence = models.PositiveIntegerField(editable=False, null=True, blank=True)
+    
+    # Versioning
+    version = models.PositiveIntegerField(default=1, verbose_name="Version")
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='versions', verbose_name="Original Invoice")
     
     date = models.DateField()
     due_date = models.DateField()
@@ -346,8 +350,18 @@ class Invoice(TenantMixin):
         # 2. Date part (YYYYMMDD)
         date_str = self.date.strftime('%Y%m%d')
         
-        # 3. Format as #YYYYMMDDNNN
-        return f"#{date_str}{self.global_sequence:03d}"
+        # 3. Format as YYYY-MM-DD-NNN
+        # Note: User requested YYYY-MM-DD-XXX format for NEW invoices.
+        # However, to maintain backward compatibility or if they want to switch format entirely:
+        # The prompt says: "use a YYYY-MM-DD-XXX/Y"
+        # Let's adopt this format.
+        
+        base_number = f"{self.date.strftime('%Y-%m-%d')}-{self.global_sequence:03d}"
+        
+        if self.version > 1:
+            return f"{base_number}/{self.version}"
+            
+        return base_number
     
     def save(self, *args, **kwargs):
         """Override save to auto-generate sequences and number"""

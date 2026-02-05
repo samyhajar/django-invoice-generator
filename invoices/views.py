@@ -52,6 +52,7 @@ def generate_pdf_file(invoice):
         'gross_total': gross_total,
         'vat_label': vat_label,
         'payment_info': payment_info,
+        'is_invalid': invoice.status == 'invalid',
     })
     
     # Generate PDF
@@ -68,6 +69,8 @@ def generate_invoice_pdf(request, invoice_id):
     from .storage import ensure_project_folder, get_client_invoice_path
     ensure_project_folder(invoice.project.client.name, invoice.project.name)
     pdf_path = get_client_invoice_path(invoice.project.client.name, invoice.project.name, invoice.invoice_number)
+    import os
+    os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
     with open(pdf_path, 'wb') as f:
         f.write(pdf)
     
