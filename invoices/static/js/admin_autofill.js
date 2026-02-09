@@ -2,27 +2,29 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('Admin Autofill JS loaded [DEBUG VERSION]');
 
     // Helper to update fields
-    function updateRow(rowPrefix, description, price) {
+    function updateRow(rowPrefix, description, price, applyVat) {
         if (!rowPrefix) return;
 
-        console.log(`Updating row ${rowPrefix}: Desc=${description}, Price=${price}`);
+        console.log(`Updating row ${rowPrefix}: Desc=${description}, Price=${price}, VAT=${applyVat}`);
 
         const descField = document.querySelector(`#id_${rowPrefix}-description`);
         const priceField = document.querySelector(`#id_${rowPrefix}-unit_price`);
+        const vatField = document.querySelector(`#id_${rowPrefix}-apply_vat`);
 
         if (descField) {
             descField.value = description;
             descField.dispatchEvent(new Event('change', { bubbles: true }));
-        } else {
-            console.warn(`Description field #id_${rowPrefix}-description not found`);
         }
 
         if (priceField) {
             priceField.value = price;
             priceField.dispatchEvent(new Event('input', { bubbles: true }));
             priceField.dispatchEvent(new Event('change', { bubbles: true }));
-        } else {
-            console.warn(`Price field #id_${rowPrefix}-unit_price not found`);
+        }
+
+        if (vatField) {
+            vatField.checked = applyVat;
+            vatField.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
 
@@ -62,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                     .then(data => {
                         console.log('Fetched product data:', data);
-                        updateRow(rowPrefix, data.description, data.unit_price);
+                        updateRow(rowPrefix, data.description, data.unit_price, data.apply_vat);
                     })
                     .catch(err => console.error('Error fetching product details:', err));
             }

@@ -265,7 +265,7 @@ class ProductAdmin(RoleIsolatedAdmin):
             return False
         return super().has_module_permission(request)
     
-    list_display = ['name', 'default_unit_price', 'created_at']
+    list_display = ['name', 'default_unit_price', 'apply_vat', 'created_at']
     search_fields = ['name']
 
 
@@ -319,7 +319,7 @@ class ServiceItemInline(TabularInline):
     extra = 1
     verbose_name = "Service / Leistung"
     verbose_name_plural = "Services / Leistungen"
-    fields = ['product', 'description', 'quantity', 'unit_price', 'order']
+    fields = ['product', 'description', 'quantity', 'unit_price', 'apply_vat', 'order']
     autocomplete_fields = ['product']
     
     def get_queryset(self, request):
@@ -335,7 +335,7 @@ class ExpenseItemInline(TabularInline):
     extra = 1
     verbose_name = "Expense / Spesen"
     verbose_name_plural = "Expenses / Spesen"
-    fields = ['description', 'quantity', 'unit_price', 'apply_vat', 'order']
+    fields = ['title', 'description', 'quantity', 'unit_price', 'apply_vat', 'order']
     
     def get_queryset(self, request):
         return super().get_queryset(request).filter(item_type='expense')
@@ -350,7 +350,7 @@ class MileageItemInline(TabularInline):
     extra = 1
     verbose_name = "Mileage / Kilometerstand"
     verbose_name_plural = "Mileage / Kilometerstand"
-    fields = ['description', 'quantity', 'num_people', 'order']
+    fields = ['title', 'description', 'quantity', 'num_people', 'apply_vat', 'order']
     
     def get_queryset(self, request):
         return super().get_queryset(request).filter(item_type='mileage')
@@ -413,10 +413,6 @@ class InvoiceAdmin(RoleIsolatedAdmin):
                 if item_type:
                     instance.item_type = item_type
                 
-                # Special logic for mileage: usually no VAT
-                if item_type == 'mileage':
-                    instance.apply_vat = False
-                    
                 instance.save()
             formset.save_m2m()
             

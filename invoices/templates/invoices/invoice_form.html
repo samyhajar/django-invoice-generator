@@ -1,14 +1,11 @@
 {% extends 'dashboard_base.html' %}
 {% load static %}
 {% load invoice_tags %}
-
 {% block title %}Create Invoice - InvoiceGen{% endblock %}
-
 {% block content %}
 <div class="space-y-6">
     <form method="post" class="space-y-8">
         {% csrf_token %}
-
         <!-- Header -->
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
@@ -22,7 +19,6 @@
                 <c-button type="submit">Save Invoice</c-button>
             </div>
         </div>
-
         {% if form.errors or items.errors %}
         <div class="mb-8 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
             <div class="flex items-center gap-3">
@@ -36,16 +32,15 @@
             <ul class="mt-2 list-inside list-disc text-sm space-y-1">
                 {% for field in form %}
                 {% for error in field.errors %}
-                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                <li>
+                    <strong>{{ field.label }}:</strong> {{ error }}
+                </li>
                 {% endfor %}
                 {% endfor %}
-                {% for error in items.non_form_errors %}
-                <li>{{ error }}</li>
-                {% endfor %}
+                {% for error in items.non_form_errors %}<li>{{ error }}</li>{% endfor %}
             </ul>
         </div>
         {% endif %}
-
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <!-- General Info -->
             <div class="lg:col-span-2 space-y-6">
@@ -75,7 +70,6 @@
                         </div>
                     </div>
                 </c-card>
-
                 <!-- Line Items -->
                 <c-card title="Line Items" description="Services, expenses, or mileage.">
                     {{ items.management_form }}
@@ -132,14 +126,14 @@
                                     </td>
                                     <td class="p-2 align-middle text-center">
                                         <c-checkbox name="{{ item_form.apply_vat.html_name }}"
-                                            id="{{ item_form.apply_vat.auto_id }}" {% if item_form.apply_vat.value
-                                            %}checked{% endif %} />
+                                            id="{{ item_form.apply_vat.auto_id }}" {{
+                                            item_form.apply_vat.value|is_checked }} />
                                     </td>
                                     <td class="p-2 align-middle text-center">
                                         {% if item_form.DELETE %}
                                         <c-checkbox name="{{ item_form.DELETE.html_name }}"
-                                            id="{{ item_form.DELETE.auto_id }}" {% if item_form.DELETE.value %}checked{%
-                                            endif %} />
+                                            id="{{ item_form.DELETE.auto_id }}" {{
+                                            item_form.DELETE.value|is_checked}} />
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -158,7 +152,6 @@
                     </div>
                 </c-card>
             </div>
-
             <!-- Tax & Settings Side -->
             <div class="space-y-6">
                 <c-card title="Tax & Settings" description="Global invoice settings.">
@@ -183,7 +176,6 @@
                         </div>
                     </div>
                 </c-card>
-
                 <c-card title="Notes" description="Appear on the PDF.">
                     <div class="space-y-4">
                         <div class="space-y-2">
@@ -202,7 +194,6 @@
                 </c-card>
             </div>
         </div>
-
         <!-- Footer Actions mobile -->
         <div class="mt-8 flex flex-col gap-3 md:hidden">
             <c-button type="submit" size="lg" class="w-full">Save Invoice</c-button>
@@ -212,6 +203,5 @@
         </div>
     </form>
 </div>
-
 <script src="{% static 'js/invoice_form.js' %}"></script>
 {% endblock %}

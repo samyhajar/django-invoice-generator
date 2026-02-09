@@ -1,0 +1,10 @@
+{
+    "[django-html]": {
+        "editor.defaultFormatter": "djlint.djlint",
+        "editor.formatOnSave": true
+    },
+    "djlint.format": true,
+    "djlint.preserveBlankLines": true,
+    "djlint.useVenv": true,
+    "djlint.venvPath": "./venv"
+}
