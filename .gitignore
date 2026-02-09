@@ -43,3 +43,6 @@ htmlcov/
 
 # Local development
 local_settings.py
+
+# Node
+node_modules/

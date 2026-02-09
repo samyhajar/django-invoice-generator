@@ -1,0 +1,74 @@
+{% extends 'dashboard_base.html' %}
+{% block title %}Products - InvoiceGen{% endblock %}
+{% block content %}
+    <div class="space-y-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">Products & Services</h1>
+                <p class="text-muted-foreground mt-1">Manage your service catalog and pricing.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'product_create' %}">
+                    <c-button>
+                    <svg class="mr-2 h-4 w-4"
+                         xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="2"
+                         stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    New Product
+                    </c-button>
+                </a>
+            </div>
+        </div>
+        <c-card>
+        <div class="relative w-full overflow-auto -mx-6">
+            <table class="w-full caption-bottom text-sm">
+                <thead class="bg-muted/50 [&_tr]:border-b">
+                    <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
+                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Description</th>
+                        <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Price</th>
+                        <th class="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="[&_tr:last-child]:border-0">
+                    {% for product in products %}
+                        <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                            <td class="p-4 align-middle font-medium text-primary">
+                                <a href="{% url 'product_update' product.id %}" class="hover:underline">{{ product.name
+                                }}</a>
+                            </td>
+                            <td class="p-4 align-middle text-muted-foreground max-w-xs truncate">{{ product.description|default:"-" }}</td>
+                            <td class="p-4 align-middle text-right font-medium">€{{ product.default_unit_price|floatformat:2 }}</td>
+                            <td class="p-4 align-middle text-right">
+                                <a href="{% url 'product_update' product.id %}">
+                                    <c-button variant="ghost" size="sm">Edit</c-button>
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="p-8 text-center text-muted-foreground">
+                                <div class="flex flex-col items-center gap-2">
+                                    <svg class="h-10 w-10 text-muted/30"
+                                         xmlns="http://www.w3.org/2000/svg"
+                                         fill="none"
+                                         viewBox="0 0 24 24"
+                                         stroke-width="1.5"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                                    </svg>
+                                    <p>No products found.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        </c-card>
+    </div>
+{% endblock %}

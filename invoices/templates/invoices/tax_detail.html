@@ -1,6 +1,5 @@
 {% extends "admin/change_list.html" %}
 {% load i18n admin_urls l10n %}
-
 {% block content %}
 <div class="mt-6">
     <!-- Financial Summary Card -->
@@ -31,7 +30,6 @@
         </div>
     </div>
 </div>
-
 <!-- Tax Bracket Pyramid -->
 <div class="mb-6">
     <div
@@ -55,7 +53,8 @@
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     {% for b in brackets %}
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">{{ b.bracket.description }}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">{{
+                            b.bracket.description }}</td>
                         <td class="px-6 py-4 text-center whitespace-nowrap">{{ b.rate|floatformat:0 }}%</td>
                         <td class="px-6 py-4 text-right whitespace-nowrap">{{ b.taxable_amount|floatformat:2 }} €</td>
                         <td
@@ -69,7 +68,7 @@
                                 {% else %}
                                 <div class="bg-gray-300 h-2.5 rounded-full" style="width: 0%"></div>
                                 {% endif %}
-                                <!-- Note: Calculating exact visual percentage for infinite brackets is tricky, 
+                                <!-- Note: Calculating exact visual percentage for infinite brackets is tricky,
                                      so we toggle simply filled/empty or full for used brackets.
                                      For a "pyramid" feel, full width for used brackets is okay. -->
                             </div>

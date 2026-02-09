@@ -2,7 +2,7 @@ from django.test import TestCase, Client as TestClient
 from django.contrib.auth.models import User
 from django.urls import reverse
 from datetime import date, timedelta
-from invoices.models import Invoice, Client, Project, CompanyProfile
+from invoices.models import Invoice, Client, Project, CompanyProfile, Tenant
 
 class InvoiceAdminTest(TestCase):
     def setUp(self):
@@ -10,8 +10,12 @@ class InvoiceAdminTest(TestCase):
         self.admin_user = User.objects.create_superuser('admin', 'admin@example.com', 'password')
         self.client.login(username='admin', password='password')
         
+        # Create tenant
+        self.tenant = Tenant.objects.create(name="Test Tenant", owner=self.admin_user)
+        
         # Create necessary data
         self.client_obj = Client.objects.create(
+            tenant=self.tenant,
             name="Test Client",
             initials="TC",
             email="test@example.com",
@@ -19,6 +23,7 @@ class InvoiceAdminTest(TestCase):
         )
         
         self.project_obj = Project.objects.create(
+            tenant=self.tenant,
             client=self.client_obj,
             name="Test Project",
             abbreviation="TP"
@@ -27,6 +32,7 @@ class InvoiceAdminTest(TestCase):
         # Ensure company profile exists
         if not CompanyProfile.objects.exists():
             CompanyProfile.objects.create(
+                tenant=self.tenant,
                 company_name="My Company",
                 email="me@mycompany.com",
                 address="My Address",
@@ -36,6 +42,7 @@ class InvoiceAdminTest(TestCase):
     def test_mark_as_paid_view(self):
         # Create a SENT invoice
         invoice = Invoice.objects.create(
+            tenant=self.tenant,
             project=self.project_obj,
             date=date.today(),
             due_date=date.today() + timedelta(days=14),
@@ -62,6 +69,7 @@ class InvoiceAdminTest(TestCase):
     def test_mark_as_paid_button_visibility(self):
         # Create a SENT invoice
         sent_invoice = Invoice.objects.create(
+            tenant=self.tenant,
             project=self.project_obj,
             date=date.today(),
             due_date=date.today() + timedelta(days=14),
@@ -70,6 +78,7 @@ class InvoiceAdminTest(TestCase):
         
         # Create a PAID invoice
         paid_invoice = Invoice.objects.create(
+            tenant=self.tenant,
             project=self.project_obj,
             date=date.today(),
             due_date=date.today() + timedelta(days=14),

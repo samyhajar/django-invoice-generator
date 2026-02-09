@@ -1,12 +1,17 @@
 from django.test import TestCase
 from decimal import Decimal
-from invoices.models import TaxYear, TaxBracket
-from invoices.utils import calculate_progressive_tax
+from invoices.models import TaxYear, TaxBracket, Tenant
+from django.contrib.auth.models import User
+from ..utils import calculate_progressive_tax
 
 class TaxCalculationTests(TestCase):
     def setUp(self):
+        # Create a tenant
+        self.user = User.objects.create_user('testuser', 'test@example.com', 'password')
+        self.tenant = Tenant.objects.create(name="Test Tenant", owner=self.user)
+        
         # Setup 2025 brackets same as production script
-        self.year = TaxYear.objects.create(year=2025, active=True)
+        self.year = TaxYear.objects.create(year=2025, active=True, tenant=self.tenant)
         
         brackets = [
             (0, 13308, 0),
@@ -23,7 +28,8 @@ class TaxCalculationTests(TestCase):
                 tax_year=self.year,
                 lower_limit=Decimal(lower),
                 upper_limit=Decimal(upper) if upper else None,
-                rate=Decimal(rate)
+                rate=Decimal(rate),
+                tenant=self.tenant
             )
 
     def test_zero_income(self):

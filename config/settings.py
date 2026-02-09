@@ -195,3 +195,8 @@ UNFOLD = {
         },
     },
 }
+
+# Authentication settings
+LOGIN_REDIRECT_URL = 'invoice_list'
+LOGIN_URL = 'login'
+LOGOUT_REDIRECT_URL = 'home'

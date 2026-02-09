@@ -1,0 +1,88 @@
+{% extends 'dashboard_base.html' %}
+{% load static %}
+{% block title %}{{ view.action }} Client - InvoiceGen{% endblock %}
+{% block content %}
+    <div class="space-y-6">
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+            <!-- Header -->
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight">{{ view.action }} Client</h1>
+                    <p class="text-muted-foreground mt-1">Manage client details and contact information.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'client_list' %}">
+                        <c-button variant="outline">Cancel</c-button>
+                    </a>
+                    <c-button type="submit">Save Client</c-button>
+                </div>
+            </div>
+            {% if form.errors %}
+                <div class="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+                    <div class="flex items-center gap-3">
+                        <svg class="h-5 w-5"
+                             xmlns="http://www.w3.org/2000/svg"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="font-semibold">Please correct the errors below</h3>
+                    </div>
+                    <ul class="mt-2 list-inside list-disc text-sm space-y-1">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>
+                                    <strong>{{ field.label }}:</strong> {{ error }}
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Basic Information -->
+                <c-card title="Basic Information" description="Primary client details and identification.">
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div class="sm:col-span-2 space-y-2">
+                        <c-label for="{{ form.name.id_for_label }}">Client Name</c-label>
+                        <c-input name="{{ form.name.name }}" id="{{ form.name.auto_id }}" value="{{ form.name.value|default:'' }}" placeholder="e.g. Acme Corp" />
+                        {% if form.name.errors %}<p class="text-sm text-destructive">{{ form.name.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="space-y-2">
+                        <c-label for="{{ form.initials.id_for_label }}">Initials</c-label>
+                        <c-input name="{{ form.initials.name }}" id="{{ form.initials.auto_id }}" value="{{ form.initials.value|default:'' }}" placeholder="e.g. AC" />
+                    </div>
+                    <div class="space-y-2">
+                        <c-label for="{{ form.uid.id_for_label }}">UID (VAT ID)</c-label>
+                        <c-input name="{{ form.uid.name }}" id="{{ form.uid.auto_id }}" value="{{ form.uid.value|default:'' }}" placeholder="e.g. VAT12345678" />
+                    </div>
+                    <div class="sm:col-span-2 space-y-2">
+                        <c-label for="{{ form.name_extension.id_for_label }}">Name Extension (optional)</c-label>
+                        <c-input name="{{ form.name_extension.name }}" id="{{ form.name_extension.auto_id }}" value="{{ form.name_extension.value|default:'' }}" placeholder="e.g. Ltd, GmbH" />
+                    </div>
+                </div>
+                </c-card>
+                <!-- Contact Details -->
+                <c-card title="Contact Details" description="How to reach this client.">
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div class="space-y-2">
+                        <c-label for="{{ form.email.id_for_label }}">Email</c-label>
+                        <c-input type="email" name="{{ form.email.name }}" id="{{ form.email.auto_id }}" value="{{ form.email.value|default:'' }}" placeholder="client@example.com" />
+                    </div>
+                    <div class="space-y-2">
+                        <c-label for="{{ form.phone.id_for_label }}">Phone</c-label>
+                        <c-input type="tel" name="{{ form.phone.name }}" id="{{ form.phone.auto_id }}" value="{{ form.phone.value|default:'' }}" placeholder="+1 234 567 890" />
+                    </div>
+                    <div class="sm:col-span-2 space-y-2">
+                        <c-label for="{{ form.address.id_for_label }}">Address</c-label>
+                        <c-textarea name="{{ form.address.name }}" id="{{ form.address.auto_id }}" rows="3" placeholder="123 Street Name, City, Country">{{ form.address.value|default:''
+                        }}</c-textarea>
+                    </div>
+                </div>
+                </c-card>
+            </div>
+        </form>
+    </div>
+{% endblock %}

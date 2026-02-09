@@ -1,0 +1,158 @@
+{% extends 'dashboard_base.html' %}
+{% load static %}
+{% block title %}Company Profile - InvoiceGen{% endblock %}
+{% block content %}
+    <div class="space-y-6">
+        <form id="profile-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <!-- Header -->
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight">Company Profile</h1>
+                    <p class="text-muted-foreground mt-1">Manage your company details and default invoice settings.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <c-button type="submit">Save Changes</c-button>
+                </div>
+            </div>
+            {% if form.errors %}
+                <div class="mb-8 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+                    <div class="flex items-center gap-3">
+                        <svg class="h-5 w-5"
+                             xmlns="http://www.w3.org/2000/svg"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="font-semibold">Please correct the errors below</h3>
+                    </div>
+                    <ul class="mt-2 list-inside list-disc text-sm space-y-1">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li>
+                                    <strong>{{ field.label }}:</strong> {{ error }}
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <!-- Branding -->
+                <c-card title="Branding" description="Your company identity on invoices.">
+                <div class="space-y-6">
+                    <div class="space-y-2">
+                        <c-label for="{{ form.company_name.id_for_label }}">Company Name</c-label>
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1">
+                                <c-input name="{{ form.company_name.name }}" id="{{ form.company_name.auto_id }}" value="{{ form.company_name.value|default:'' }}" placeholder="ACME Corp" />
+                            </div>
+                            <c-checkbox name="{{ form.display_company_name.name }}" id="{{ form.display_company_name.auto_id }}"
+                            {% if form.display_company_name.value %}checked{% endif %}
+                            label="Show on PDF" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <c-label for="{{ form.logo.id_for_label }}">Company Logo</c-label>
+                        <div class="flex items-start gap-4">
+                            {% if instance.logo %}
+                                <div class="shrink-0">
+                                    <img src="{{ instance.logo.url }}"
+                                         alt="Logo"
+                                         class="h-16 w-16 rounded-md border border-border object-contain p-1 bg-white" />
+                                </div>
+                            {% endif %}
+                            <div class="flex-1 space-y-3">
+                                <div class="flex items-center gap-4">
+                                    <input type="file"
+                                           name="{{ form.logo.name }}"
+                                           id="{{ form.logo.auto_id }}"
+                                           class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                                    <c-checkbox name="{{ form.display_logo.name }}" id="{{ form.display_logo.auto_id }}"
+                                    {% if form.display_logo.value %}checked{% endif %}
+                                    label="Show on PDF" />
+                                </div>
+                                <p class="text-xs text-muted-foreground">PNG or JPG. Max 2MB.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </c-card>
+                <!-- Contact Information -->
+                <c-card title="Contact Details" description="How clients can reach you.">
+                <div class="space-y-6">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <c-label for="{{ form.address.id_for_label }}">Address</c-label>
+                            <c-checkbox name="{{ form.display_address.name }}" id="{{ form.display_address.auto_id }}"
+                            {% if form.display_address.value %}checked{% endif %}
+                            label="Show on PDF" />
+                        </div>
+                        <c-textarea name="{{ form.address.name }}" id="{{ form.address.auto_id }}" rows="3">{{
+                        form.address.value|default:'' }}</c-textarea>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <c-label for="{{ form.email.id_for_label }}">Email</c-label>
+                                <c-checkbox name="{{ form.display_email.name }}" id="{{ form.display_email.auto_id }}"
+                                {% if form.display_email.value %}checked{% endif %}
+                                label="Show" />
+                            </div>
+                            <c-input name="{{ form.email.name }}" id="{{ form.email.auto_id }}" type="email" value="{{ form.email.value|default:'' }}" />
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <c-label for="{{ form.phone.id_for_label }}">Phone</c-label>
+                                <c-checkbox name="{{ form.display_phone.name }}" id="{{ form.display_phone.auto_id }}"
+                                {% if form.display_phone.value %}checked{% endif %}
+                                label="Show" />
+                            </div>
+                            <c-input name="{{ form.phone.name }}" id="{{ form.phone.auto_id }}" value="{{ form.phone.value|default:'' }}" />
+                        </div>
+                    </div>
+                </div>
+                </c-card>
+                <!-- Financial Details -->
+                <c-card title="Financial Details" description="Business IDs and bank information.">
+                <div class="space-y-6">
+                    <div class="space-y-2">
+                        <c-label for="{{ form.uid.id_for_label }}">UID (VAT ID)</c-label>
+                        <c-input name="{{ form.uid.name }}" id="{{ form.uid.auto_id }}" value="{{ form.uid.value|default:'' }}" placeholder="ATU12345678" />
+                    </div>
+                    <div class="space-y-2">
+                        <c-label for="{{ form.iban.id_for_label }}">IBAN</c-label>
+                        <c-input name="{{ form.iban.name }}" id="{{ form.iban.auto_id }}" value="{{ form.iban.value|default:'' }}" placeholder="AT00 0000 0000 0000 0000" />
+                    </div>
+                </div>
+                </c-card>
+                <!-- Rates & Terms -->
+                <c-card title="Rates & Payment" description="Default settings for new invoices.">
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="space-y-2">
+                            <c-label for="{{ form.mileage_base_rate.id_for_label }}">Mileage Base (€/km)</c-label>
+                            <c-input name="{{ form.mileage_base_rate.name }}" id="{{ form.mileage_base_rate.auto_id }}" type="number" step="0.01" value="{{ form.mileage_base_rate.value|stringformat:'.2f'|default:'0.42' }}" />
+                        </div>
+                        <div class="space-y-2">
+                            <c-label for="{{ form.mileage_extra_person_rate.id_for_label }}">Extra Person
+                            (€/km)</c-label>
+                            <c-input name="{{ form.mileage_extra_person_rate.name }}" id="{{ form.mileage_extra_person_rate.auto_id }}" type="number" step="0.01" value="{{ form.mileage_extra_person_rate.value|stringformat:'.2f'|default:'0.05' }}" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <c-label for="{{ form.payment_terms.id_for_label }}">Default Payment Terms</c-label>
+                        <c-textarea name="{{ form.payment_terms.name }}" id="{{ form.payment_terms.auto_id }}" rows="4">{{ form.payment_terms.value|default:'' }}</c-textarea>
+                    </div>
+                </div>
+                </c-card>
+            </div>
+            <!-- Footer Actions mobile -->
+            <div class="mt-8 flex justify-end md:hidden">
+                <c-button type="submit" size="lg" class="w-full">Save Changes</c-button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

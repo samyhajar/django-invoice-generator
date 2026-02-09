@@ -1,0 +1,65 @@
+{% extends 'dashboard_base.html' %}
+{% load static %}
+{% block title %}{{ view.action }} Product - InvoiceGen{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+        <!-- Header -->
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">{{ view.action }} Product</h1>
+                <p class="text-muted-foreground mt-1">Manage product or service details.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'product_list' %}">
+                    <c-button variant="outline">Cancel</c-button>
+                </a>
+                <c-button type="submit">Save Product</c-button>
+            </div>
+        </div>
+        {% if form.errors %}
+        <div class="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+            <div class="flex items-center gap-3">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="font-semibold">Please correct the errors below</h3>
+            </div>
+            <ul class="mt-2 list-inside list-disc text-sm space-y-1">
+                {% for field in form %}
+                {% for error in field.errors %}
+                <li>
+                    <strong>{{ field.label }}:</strong> {{ error }}
+                </li>
+                {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        <c-card>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div class="sm:col-span-2 space-y-2">
+                    <c-label for="{{ form.name.id_for_label }}">Product Name</c-label>
+                    <c-input name="{{ form.name.name }}" id="{{ form.name.auto_id }}"
+                        value="{{ form.name.value|default:'' }}" placeholder="e.g. Web Development" />
+                </div>
+                <div class="space-y-2">
+                    <c-label for="{{ form.default_unit_price.id_for_label }}">Default Price (€)</c-label>
+                    <c-input type="number" step="0.01" name="{{ form.default_unit_price.name }}"
+                        id="{{ form.default_unit_price.auto_id }}"
+                        value="{{ form.default_unit_price.value|default:'' }}" placeholder="0.00" />
+                </div>
+                <div class="sm:col-span-2 space-y-2">
+                    <c-label for="{{ form.description.id_for_label }}">Description</c-label>
+                    <c-textarea name="{{ form.description.name }}" id="{{ form.description.auto_id }}" rows="4"
+                        placeholder="Product or service description...">{{ form.description.value|default:''
+                        }}</c-textarea>
+                </div>
+            </div>
+        </c-card>
+    </form>
+</div>
+{% endblock %}
