@@ -1,0 +1,109 @@
+{% load invoice_tags %}
+<tr class="border-b transition-colors hover:bg-muted/50" data-row-id="{{ item_form.prefix }}">
+    <td colspan="6" class="p-4">
+        <div class="space-y-3">
+            <input type="hidden" name="{{ item_form.item_type.name }}"
+                value="{{ item_form.item_type.value|default:'service' }}" class="item-type-select">
+            <input type="hidden" name="{{ item_form.DELETE.name }}" value="{{ item_form.DELETE.value|default:'' }}"
+                class="item-delete-input">
+            <input type="hidden" name="{{ item_form.id.name }}" value="{{ item_form.id.value|default:'' }}">
+
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <input type="text" name="{{ item_form.title.name }}" value="{{ item_form.title.value|default:'' }}"
+                        placeholder="Item name or title"
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 {% if item_form.title.errors %}border-destructive focus:ring-destructive{% endif %}">
+                    {% for error in item_form.title.errors %}
+                    <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div>
+                <input type="text" name="{{ item_form.description.name }}"
+                    value="{{ item_form.description.value|default:'' }}" placeholder="Detailed description"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 {% if item_form.description.errors %}border-destructive focus:ring-destructive{% endif %}">
+                {% for error in item_form.description.errors %}
+                <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div class="grid grid-cols-12 gap-3 items-center">
+                <div class="col-span-2">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Qty</label>
+                    <input type="text" inputmode="decimal" name="{{ item_form.quantity.name }}"
+                        value="{{ item_form.quantity.value|default:'1.00' }}"
+                        class="item-quantity block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 text-right {% if item_form.quantity.errors %}border-destructive focus:ring-destructive{% endif %}">
+                    {% for error in item_form.quantity.errors %}
+                    <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Price Field (Visible for Service/Expense) -->
+                <div
+                    class="col-span-2 price-field-container {% if item_form.item_type.value == 'mileage' %}hidden{% endif %}">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Price (€)</label>
+                    <input type="text" inputmode="decimal" name="{{ item_form.unit_price.name }}"
+                        value="{{ item_form.unit_price.value|default:'0.00' }}"
+                        class="item-price block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 text-right {% if item_form.unit_price.errors %}border-destructive focus:ring-destructive{% endif %}">
+                    {% for error in item_form.unit_price.errors %}
+                    <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Mileage Price Placeholder (Hidden Input + Text, Visible for Mileage) -->
+                <div
+                    class="col-span-2 mileage-price-display {% if item_form.item_type.value != 'mileage' %}hidden{% endif %}">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Rate (€)</label>
+                    <div
+                        class="text-sm py-2 px-3 text-right bg-gray-50 rounded-md border border-transparent text-gray-500">
+                        Auto</div>
+                    <!-- Hidden input for mileage price to ensure form submission works if needed, standard logic updates it -->
+                    <input type="hidden" class="mileage-price-hidden"
+                        value="{{ item_form.unit_price.value|default:'0.00' }}">
+                </div>
+
+                <div
+                    class="col-span-2 mileage-people-field {% if item_form.item_type.value != 'mileage' %}hidden{% endif %}">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">People</label>
+                    <input type="number" min="1" name="{{ item_form.num_people.name }}"
+                        value="{{ item_form.num_people.value|default:'1' }}"
+                        class="mileage-people block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 px-3 text-right {% if item_form.num_people.errors %}border-destructive focus:ring-destructive{% endif %}">
+                    {% for error in item_form.num_people.errors %}
+                    <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="col-span-2 mileage-spacer {% if item_form.item_type.value == 'mileage' %}hidden{% endif %}">
+                </div>
+
+                <div class="col-span-1 flex flex-col items-center justify-center pt-5">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">VAT</label>
+                    <input type="checkbox" name="{{ item_form.apply_vat.name }}" {% if item_form.apply_vat.value%}
+                        checked{% endif %}
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 {% if item_form.apply_vat.errors %}border-destructive focus:ring-destructive{% endif %}">
+                    {% for error in item_form.apply_vat.errors %}
+                    <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="col-span-2 text-right">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Total</label>
+                    <div class="item-total text-lg font-semibold text-gray-900">€0.00</div>
+                </div>
+
+                <!-- Delete Button -->
+                <div class="col-span-1 flex items-center justify-end pt-5">
+                    <button type="button" class="delete-item-btn text-gray-400 hover:text-red-500 transition-colors"
+                        title="Remove Item">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </td>
+</tr>

@@ -1,0 +1,75 @@
+{% load invoice_tags %}
+<tr class="border-b">
+    <td colspan="5" class="p-0">
+        <div class="p-3 space-y-3">
+            {{ item_form.id }}
+            <!-- Hidden fields -->
+            <input type="hidden" name="{{ item_form.item_type.html_name }}" id="{{ item_form.item_type.auto_id }}"
+                value="{{ item_form.item_type.value|default:'' }}" class="item-type-select">
+            {% if item_form.DELETE %}
+            <input type="hidden" name="{{ item_form.DELETE.html_name }}" id="{{ item_form.DELETE.auto_id }}"
+                value="{{ item_form.DELETE.value|default:'' }}">
+            {% endif %}
+
+            <!-- First row: Name/Title -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <c-input name="{{ item_form.title.html_name }}" id="{{ item_form.title.auto_id }}"
+                    value="{{ item_form.title.value|default:'' }}" placeholder="Product or service name"
+                    class="w-full {% if item_form.title.errors %}border-destructive focus:ring-destructive{% endif %}" />
+                {% for error in item_form.title.errors %}
+                <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Second row: Description (full width) -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <c-input name="{{ item_form.description.html_name }}" id="{{ item_form.description.auto_id }}"
+                    value="{{ item_form.description.value|default:'' }}" placeholder="Detailed description"
+                    class="w-full {% if item_form.description.errors %}border-destructive focus:ring-destructive{% endif %}" />
+                {% for error in item_form.description.errors %}
+                <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Third row: Quantity, Unit Price, VAT, Total Preview -->
+            <div class="grid grid-cols-4 gap-3 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                    <c-input type="text" inputmode="decimal" name="{{ item_form.quantity.html_name }}"
+                        id="{{ item_form.quantity.auto_id }}" value="{{ item_form.quantity.value|default:'1.00' }}"
+                        class="text-right item-quantity {% if item_form.quantity.errors %}border-destructive focus:ring-destructive{% endif %}"
+                        data-row-id="{{ item_form.prefix }}" />
+                    {% for error in item_form.quantity.errors %}
+                    <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price (€)</label>
+                    <c-input type="text" inputmode="decimal" name="{{ item_form.unit_price.html_name }}"
+                        id="{{ item_form.unit_price.auto_id }}" value="{{ item_form.unit_price.value|default:'0.00' }}"
+                        class="text-right item-price {% if item_form.unit_price.errors %}border-destructive focus:ring-destructive{% endif %}"
+                        data-row-id="{{ item_form.prefix }}" />
+                    {% for error in item_form.unit_price.errors %}
+                    <p class="text-xs text-destructive mt-1">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div class="flex items-center justify-center">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <span class="text-sm font-medium text-gray-700">VAT</span>
+                        <c-checkbox name="{{ item_form.apply_vat.html_name }}" id="{{ item_form.apply_vat.auto_id }}" {{
+                            item_form.apply_vat.value|is_checked }} />
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Total</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-right font-semibold text-gray-900 item-total"
+                        data-row-id="{{ item_form.prefix }}">
+                        €0.00
+                    </div>
+                </div>
+            </div>
+        </div>
+    </td>
+</tr>

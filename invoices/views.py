@@ -291,7 +291,7 @@ def project_form(request, project_id=None):
 @login_required
 def invoice_form(request, invoice_id=None):
     """Create or edit an invoice"""
-    from .forms import InvoiceForm
+    from .forms import InvoiceForm, InvoiceItemFormSet
     
     if invoice_id:
         invoice = get_object_or_404(Invoice, pk=invoice_id)
@@ -300,32 +300,49 @@ def invoice_form(request, invoice_id=None):
     
     if request.method == 'POST':
         form = InvoiceForm(request.POST, instance=invoice)
-        if form.is_valid():
-            form.save()
+        items = InvoiceItemFormSet(request.POST, instance=invoice if invoice else None)
+        if form.is_valid() and items.is_valid():
+            invoice = form.save()
+            items.instance = invoice
+            items.save()
             return redirect('invoice_list')
     else:
         form = InvoiceForm(instance=invoice)
+        items = InvoiceItemFormSet(instance=invoice)
     
-    return render(request, 'invoices/invoice_form.html', {'form': form})
+    # Get company profile for mileage rates
+    from .models import CompanyProfile, Tenant
+    tenant = Tenant.objects.filter(owner=request.user).first()
+    company_profile = CompanyProfile.get_instance(tenant) if tenant else None
+    
+    return render(request, 'invoices/invoice_form.html', {
+        'form': form,
+        'items': items,
+        'company_profile': company_profile
+    })
 
 
 @login_required
 def invoice_update(request, invoice_id):
     """Update an existing invoice"""
     invoice = get_object_or_404(Invoice, pk=invoice_id)
-    from .forms import InvoiceForm
+    from .forms import InvoiceForm, InvoiceItemFormSet
     
     if request.method == 'POST':
         form = InvoiceForm(request.POST, instance=invoice)
-        if form.is_valid():
+        items = InvoiceItemFormSet(request.POST, instance=invoice)
+        if form.is_valid() and items.is_valid():
             form.save()
+            items.save()
             return redirect('invoice_list')
     else:
         form = InvoiceForm(instance=invoice)
+        items = InvoiceItemFormSet(instance=invoice)
     
     return render(request, 'invoices/invoice_update.html', {
         'form': form,
-        'invoice': invoice
+        'invoice': invoice,
+        'items': items
     })
 
 

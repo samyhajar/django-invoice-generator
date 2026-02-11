@@ -1,0 +1,50 @@
+{% load invoice_tags %}
+<tr class="border-b transition-colors hover:bg-muted/50">
+    {{ item_form.id }}
+    <!-- Hidden type field - value is set by JavaScript based on which table this row is in -->
+    <input type="hidden" name="{{ item_form.item_type.html_name }}" id="{{ item_form.item_type.auto_id }}"
+        value="{{ item_form.item_type.value|default:'' }}" class="item-type-select">
+    <!-- Hidden DELETE field -->
+    {% if item_form.DELETE %}
+    <input type="hidden" name="{{ item_form.DELETE.html_name }}" id="{{ item_form.DELETE.auto_id }}"
+        value="{{ item_form.DELETE.value|default:'' }}">
+    {% endif %}
+    <td class="p-2 align-middle">
+        <c-input name="{{ item_form.title.html_name }}" id="{{ item_form.title.auto_id }}"
+            value="{{ item_form.title.value|default:'' }}" placeholder="Name"
+            class="{% if item_form.title.errors %}border-destructive focus:ring-destructive{% endif %}" />
+        {% for error in item_form.title.errors %}
+        <p class="text-xs text-destructive mt-1">{{ error }}</p>
+        {% endfor %}
+    </td>
+    <td class="p-2 align-middle">
+        <c-input name="{{ item_form.description.html_name }}" id="{{ item_form.description.auto_id }}"
+            value="{{ item_form.description.value|default:'' }}" placeholder="Description"
+            class="{% if item_form.description.errors %}border-destructive focus:ring-destructive{% endif %}" />
+        {% for error in item_form.description.errors %}
+        <p class="text-xs text-destructive mt-1">{{ error }}</p>
+        {% endfor %}
+    </td>
+    <td class="p-2 align-middle text-right">
+        <c-input type="number" step="0.01" name="{{ item_form.quantity.html_name }}"
+            id="{{ item_form.quantity.auto_id }}"
+            value="{{ item_form.quantity.value|stringformat:'.2f'|default:'1.00' }}"
+            class="text-right {% if item_form.quantity.errors %}border-destructive focus:ring-destructive{% endif %}" />
+        {% for error in item_form.quantity.errors %}
+        <p class="text-xs text-destructive mt-1">{{ error }}</p>
+        {% endfor %}
+    </td>
+    <td class="p-2 align-middle text-right">
+        <c-input type="number" step="0.01" name="{{ item_form.unit_price.html_name }}"
+            id="{{ item_form.unit_price.auto_id }}"
+            value="{{ item_form.unit_price.value|stringformat:'.2f'|default:'0.00' }}"
+            class="text-right {% if item_form.unit_price.errors %}border-destructive focus:ring-destructive{% endif %}" />
+        {% for error in item_form.unit_price.errors %}
+        <p class="text-xs text-destructive mt-1">{{ error }}</p>
+        {% endfor %}
+    </td>
+    <td class="p-2 align-middle text-center">
+        <c-checkbox name="{{ item_form.apply_vat.html_name }}" id="{{ item_form.apply_vat.auto_id }}" {{
+            item_form.apply_vat.value|is_checked }} />
+    </td>
+</tr>

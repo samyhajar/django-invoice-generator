@@ -3,6 +3,14 @@ from django.forms import inlineformset_factory
 from .models import Invoice, InvoiceItem, Client, Project, CompanyProfile, Product
 
 class InvoiceForm(forms.ModelForm):
+    # Override vat_rate to accept localized decimal input (comma-separated in German locale)
+    vat_rate = forms.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        localize=True,
+        widget=forms.TextInput(attrs={'inputmode': 'decimal'})
+    )
+    
     class Meta:
         model = Invoice
         fields = ['project', 'date', 'due_date', 'status', 'language', 'vat_rate', 'vat_label', 'notes', 'payment_notes']
@@ -50,16 +58,41 @@ class InvoiceForm(forms.ModelForm):
                  field.widget.attrs['rows'] = 3
 
 class BaseInvoiceItemFormSet(forms.BaseInlineFormSet):
-    pass
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        # Override quantity and unit_price to accept localized decimal input
+        if 'quantity' in form.fields:
+            form.fields['quantity'] = forms.DecimalField(
+                max_digits=10,
+                decimal_places=2,
+                localize=True,
+                required=False,
+                widget=forms.TextInput(attrs={
+                    'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs py-1 px-2 text-right',
+                    'inputmode': 'decimal'
+                })
+            )
+        if 'unit_price' in form.fields:
+            form.fields['unit_price'] = forms.DecimalField(
+                max_digits=10,
+                decimal_places=2,
+                localize=True,
+                required=False,
+                widget=forms.TextInput(attrs={
+                    'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs py-1 px-2 text-right',
+                    'inputmode': 'decimal'
+                })
+            )
 
 InvoiceItemFormSet = inlineformset_factory(
     Invoice, InvoiceItem,
-    fields=['item_type', 'description', 'quantity', 'unit_price', 'apply_vat'],
+    formset=BaseInvoiceItemFormSet,
+    fields=['item_type', 'title', 'description', 'quantity', 'unit_price', 'num_people', 'apply_vat'],
     widgets={
         'item_type': forms.Select(attrs={'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs py-1 px-2'}),
+        'title': forms.TextInput(attrs={'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs py-1 px-2'}),
         'description': forms.TextInput(attrs={'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs py-1 px-2'}),
-        'quantity': forms.NumberInput(attrs={'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs py-1 px-2 text-right', 'step': '0.01'}),
-        'unit_price': forms.NumberInput(attrs={'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs py-1 px-2 text-right', 'step': '0.01'}),
+        'num_people': forms.NumberInput(attrs={'class': 'block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs py-1 px-2 text-right', 'min': '1'}),
         'apply_vat': forms.CheckboxInput(attrs={'class': 'h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'}),
     },
     extra=1,

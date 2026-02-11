@@ -61,6 +61,16 @@ def render_options(field):
     return mark_safe('\n'.join(output))
 
 @register.filter
+def filter_by_type(formset, type_name):
+    """
+    Filters formset forms by item_type.
+    Returns empty list if formset is None.
+    """
+    if formset is None:
+        return []
+    return [form for form in formset if str(form['item_type'].value()) == type_name]
+
+@register.filter
 def is_checked(value):
     """
     Returns 'checked' if the value is truthy.
